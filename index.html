@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pull Request Parser</title>
+</head>
+<body>
+  <div id="getAccessToken" style="display:none">
+    <div>
+      <label>Access Token</label>
+      <input id="accessToken" type="text" />
+    </div>
+    <div>
+      <button id="saveAccessToken">Save</button>
+    </div>
+  </div>
+  <div id="pickRepo" style="display:none">
+    <div>
+      <label>Repo Owner</label>
+      <input id="owner" type="text" />
+      <select id="owners" style="display:none"></select>
+    </div>
+    <div>
+      <label>Repo Name</label>
+      <input id="repoName" type="text" />
+      <select id="repos" style="display:none"></select>
+    </div>
+    <div>
+      <button id="parsePullRequests">Create Release Notes</button>
+    </div>
+  </div>
+  <div id="approved-prs"></div>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
