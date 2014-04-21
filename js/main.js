@@ -128,9 +128,9 @@
       ' approvals and it is' + (isRebased ? '' : ' not') + ' rebased and the build ' + (state == 'success' ? 'was successful' : 'failed') + '</a>';
 
     if (approvals >= 2) {
-      $('#approved-prs').prepend('<div style="font-weight:bold;">' + aTag + '</div>');
+      return '<div style="font-weight:bold;">' + aTag + '</div>';
     } else {
-      $('#approved-prs').append('<div>' + aTag + (iHaveApproved || iAmOwner ? '' : '<span style="font-weight:bold;">Needs your approval</span>') + '</div>');
+      return '<div>' + aTag + (iHaveApproved || iAmOwner ? '' : '<span style="font-weight:bold;">Needs your approval</span>') + '</div>';
     }
   }
 
