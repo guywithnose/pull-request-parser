@@ -79,10 +79,10 @@
       var statuses = statusesXhr[0];
 
       var iAmOwner = pullRequestData.user.login == username;
-      var approvals = approvalComments(comments);
+      var approvals = approvingUsers(comments);
       var iHaveApproved = false;
       for (var i in approvals) {
-        if (approvals[i].user.login == username) {
+        if (approvals[i] == username) {
           iHaveApproved = true;
         }
       }
@@ -100,13 +100,13 @@
   }
 
   /*
-   * Filters the given comments down to comments that contain :+1:.
+   * Returns the users that have a comment containing :+1:.
    */
-  function approvalComments(comments) {
+  function approvingUsers(comments) {
     var result = [];
     for (var i in comments) {
-      if (comments[i].body.search(':\\+1:') != -1) {
-        result.push(comments[i]);
+      if (comments[i].body.search(':\\+1:') != -1 && $.inArray(comments[i].user.login, result) === -1) {
+        result.push(comments[i].user.login);
       }
     }
 
