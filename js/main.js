@@ -79,11 +79,11 @@
       var statuses = statusesXhr[0];
 
       var iAmOwner = pullRequestData.user.login == username;
-      var approvals = approvingUsers(comments);
+      var approvals = approvingComments(comments);
       var iHaveApproved = $.inArray(username, approvals) !== -1;
       var isRebased = ancestryContains(commits, headCommit);
 
-      var html = buildRow(approvals.length, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
+      var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
 
       if (approvals.length >= 2) {
         $('#approved-prs tbody').prepend(html);
@@ -104,11 +104,15 @@
   /*
    * Returns the users that have a comment containing :+1:.
    */
-  function approvingUsers(comments) {
+  function approvingComments(comments) {
     var result = [];
     for (var i in comments) {
       if (comments[i].body.search(':\\+1:') != -1 && $.inArray(comments[i].user.login, result) === -1) {
-        result.push(comments[i].user.login);
+        if (!result[comments[i].user.login]) {
+          result[comments[i].user.login] = [];
+        }
+
+        result[comments[i].user.login].push(comments[i].body);
       }
     }
 
@@ -133,7 +137,8 @@
 
   function buildRow(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner, table) {
     rowClass = '';
-    if (approvals >= 2 && isRebased) {
+    var numApprovals = Object.keys(approvals).length;
+    if (numApprovals >= 2 && isRebased) {
       rowClass = 'success';
     }
     
@@ -149,7 +154,14 @@
       rowClass = 'danger';
     }
 
-    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td>' + approvals +
+    var approvalTitle = '';
+    for (var commentor in approvals) {
+      for (var i in approvals[commentor]) {
+        approvalTitle += commentor + ': ' + approvals[commentor][i] + '\n';
+      }
+    }
+
+    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' + numApprovals +
       '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') + '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
 
     return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
