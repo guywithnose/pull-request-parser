@@ -136,7 +136,7 @@
   }
 
   function buildRow(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner, table) {
-    rowClass = '';
+    var rowClass = '';
     var numApprovals = Object.keys(approvals).length;
     if (numApprovals >= 2 && isRebased) {
       rowClass = 'success';
