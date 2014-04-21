@@ -89,16 +89,7 @@
         }
       }
 
-      var isRebased = false;
-      for (var i in commits) {
-        for (var j in commits[i].parents) {
-          var parent = commits[i].parents[j];
-          if (parent.sha == headCommit) {
-            isRebased = true;
-            break;
-          }
-        }
-      }
+      var isRebased = ancestryContains(commits, headCommit);
 
       var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
 
@@ -108,6 +99,22 @@
         $('#approved-prs').append(html);
       }
     });
+  }
+
+  /*
+   * Searches through the commits and checks to see if any of them contain the requested commit hash
+   */
+  function ancestryContains(commits, commitHash) {
+    for (var i in commits) {
+      for (var j in commits[i].parents) {
+        var parent = commits[i].parents[j];
+        if (parent.sha == commitHash) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner) {
