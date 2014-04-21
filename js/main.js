@@ -161,8 +161,9 @@
       }
     }
 
-    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' + numApprovals +
-      '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') + '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
+    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' +
+      numApprovals + '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') +
+      '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
 
     return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
   }
