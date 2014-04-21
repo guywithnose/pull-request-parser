@@ -77,28 +77,40 @@
       var comments = commentsXhr[0];
       var commits = commitsXhr[0];
       var statuses = statusesXhr[0];
-      var approvals = 0;
-      var iHaveApproved = false;
+
       var iAmOwner = pullRequestData.user.login == username;
-      for (var i in comments) {
-        if (comments[i].body.search(':\\+1:') != -1) {
-          approvals++;
-          if (comments[i].user.login == username) {
-            iHaveApproved = true;
-          }
+      var approvals = approvalComments(comments);
+      var iHaveApproved = false;
+      for (var i in approvals) {
+        if (approvals[i].user.login == username) {
+          iHaveApproved = true;
         }
       }
 
       var isRebased = ancestryContains(commits, headCommit);
 
-      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
+      var html = buildDiv(approvals.length, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
 
-      if (approvals >= 2) {
+      if (approvals.length >= 2) {
         $('#approved-prs').prepend(html);
       } else {
         $('#approved-prs').append(html);
       }
     });
+  }
+
+  /*
+   * Filters the given comments down to comments that contain :+1:.
+   */
+  function approvalComments(comments) {
+    var result = [];
+    for (var i in comments) {
+      if (comments[i].body.search(':\\+1:') != -1) {
+        result.push(comments[i]);
+      }
+    }
+
+    return result;
   }
 
   /*
