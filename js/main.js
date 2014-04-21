@@ -71,10 +71,12 @@
   function parsePullRequest(username, headCommit, pullRequestData) {
     $.when(
         $.ajax(pullRequestData.comments_url),
-        $.ajax(pullRequestData.commits_url)
-    ).done(function(commentsXhr, commitsXhr) {
+        $.ajax(pullRequestData.commits_url),
+        $.ajax(pullRequestData.statuses_url)
+    ).done(function(commentsXhr, commitsXhr, statusesXhr) {
       var comments = commentsXhr[0];
       var commits = commitsXhr[0];
+      var statuses = statusesXhr[0];
       var approvals = 0;
       var iHaveApproved = false;
       for (var i in comments) {
@@ -97,7 +99,7 @@
         }
       }
 
-      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased);
+      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state);
 
       if (approvals >= 2) {
         $('#approved-prs').prepend(html);
@@ -107,9 +109,9 @@
     });
   }
 
-  function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased) {
+  function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state) {
     var aTag = '<a href="' + pullRequestData.html_url + '">Pull Request ' + pullRequestData.number + ' has ' + approvals +
-      ' approvals and it is' + (isRebased ? '' : ' not') + ' rebased</a>';
+      ' approvals and it is' + (isRebased ? '' : ' not') + ' rebased and the build ' + (state == 'success' ? 'was successful' : 'failed') + '</a>';
 
     if (approvals >= 2) {
       $('#approved-prs').prepend('<div style="font-weight:bold;">' + aTag + '</div>');
