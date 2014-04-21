@@ -54,7 +54,7 @@
   }
 
   function parsePullRequests(owner, repo) {
-    $('#approved-prs').html('');
+    $('#approved-prs tbody').html('');
     $.when(
         $.ajax('https://api.github.com/user'),
         $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
@@ -83,12 +83,12 @@
       var iHaveApproved = $.inArray(username, approvals) !== -1;
       var isRebased = ancestryContains(commits, headCommit);
 
-      var html = buildDiv(approvals.length, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
+      var html = buildRow(approvals.length, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
 
       if (approvals.length >= 2) {
-        $('#approved-prs').prepend(html);
+        $('#approved-prs tbody').prepend(html);
       } else {
-        $('#approved-prs').append(html);
+        $('#approved-prs tbody').append(html);
       }
     });
   }
@@ -131,15 +131,28 @@
     return false;
   }
 
-  function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner) {
-    var aTag = '<a href="' + pullRequestData.html_url + '">Pull Request ' + pullRequestData.number + ' has ' + approvals +
-      ' approvals and it is' + (isRebased ? '' : ' not') + ' rebased and the build ' + (state == 'success' ? 'was successful' : 'failed') + '</a>';
-
-    if (approvals >= 2) {
-      return '<div style="font-weight:bold;">' + aTag + '</div>';
-    } else {
-      return '<div>' + aTag + (iHaveApproved || iAmOwner ? '' : '<span style="font-weight:bold;">Needs your approval</span>') + '</div>';
+  function buildRow(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner, table) {
+    rowClass = '';
+    if (approvals >= 2 && isRebased) {
+      rowClass = 'success';
     }
+    
+    if (!iHaveApproved && !iAmOwner) {
+      rowClass = 'info';
+    }
+    
+    if (iAmOwner && !isRebased) {
+      rowClass = 'warning';
+    }
+
+    if (state == 'failure') {
+      rowClass = 'danger';
+    }
+
+    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td>' + approvals +
+      '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') + '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
+
+    return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
   }
 
   function init() {

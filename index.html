@@ -2,33 +2,48 @@
 <html>
 <head>
   <title>Pull Request Parser</title>
+  <link href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/united/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-  <div id="getAccessToken" style="display:none">
-    <div>
-      <label>Access Token</label>
-      <input id="accessToken" type="text" />
+  <div class="container">
+    <div id="getAccessToken" style="display:none">
+      <div>
+        <label>Access Token</label>
+        <input id="accessToken" type="text" />
+      </div>
+      <div>
+        <button id="saveAccessToken">Save</button>
+      </div>
     </div>
-    <div>
-      <button id="saveAccessToken">Save</button>
+    <div id="pickRepo" style="display:none">
+      <div>
+        <label>Repo Owner</label>
+        <input id="owner" type="text" />
+        <select id="owners" style="display:none"></select>
+      </div>
+      <div>
+        <label>Repo Name</label>
+        <input id="repoName" type="text" />
+        <select id="repos" style="display:none"></select>
+      </div>
+      <div>
+        <button id="parsePullRequests">Parse Pull Requests</button>
+      </div>
     </div>
+    <table class="table table-striped table-hover" id="approved-prs">
+      <thead>
+        <tr>
+          <th>Pull Request #</th>
+          <th>Approvals</th>
+          <th>Rebased</th>
+          <th>Build Passed</th>
+          <th>Needs My Approval</th>
+          <th>Is Mine</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
-  <div id="pickRepo" style="display:none">
-    <div>
-      <label>Repo Owner</label>
-      <input id="owner" type="text" />
-      <select id="owners" style="display:none"></select>
-    </div>
-    <div>
-      <label>Repo Name</label>
-      <input id="repoName" type="text" />
-      <select id="repos" style="display:none"></select>
-    </div>
-    <div>
-      <button id="parsePullRequests">Parse Pull Requests</button>
-    </div>
-  </div>
-  <div id="approved-prs"></div>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
   <script src="js/main.js"></script>
 </body>
