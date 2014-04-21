@@ -93,6 +93,14 @@
     });
   }
 
+  function getState(statuses) {
+    if (statuses.length == 0) {
+      return 'none';
+    }
+
+    return statuses[0].state;
+  }
+
   /*
    * Returns the users that have a comment containing :+1:.
    */
