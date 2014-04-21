@@ -77,37 +77,50 @@
       var comments = commentsXhr[0];
       var commits = commitsXhr[0];
       var statuses = statusesXhr[0];
-      var approvals = 0;
-      var iHaveApproved = false;
+
       var iAmOwner = pullRequestData.user.login == username;
-      for (var i in comments) {
-        if (comments[i].body.search(':\\+1:') != -1) {
-          approvals++;
-          if (comments[i].user.login == username) {
-            iHaveApproved = true;
-          }
-        }
-      }
+      var approvals = approvingUsers(comments);
+      var iHaveApproved = $.inArray(username, approvals) !== -1;
+      var isRebased = ancestryContains(commits, headCommit);
 
-      var isRebased = false;
-      for (var i in commits) {
-        for (var j in commits[i].parents) {
-          var parent = commits[i].parents[j];
-          if (parent.sha == headCommit) {
-            isRebased = true;
-            break;
-          }
-        }
-      }
+      var html = buildDiv(approvals.length, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
 
-      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
-
-      if (approvals >= 2) {
+      if (approvals.length >= 2) {
         $('#approved-prs').prepend(html);
       } else {
         $('#approved-prs').append(html);
       }
     });
+  }
+
+  /*
+   * Returns the users that have a comment containing :+1:.
+   */
+  function approvingUsers(comments) {
+    var result = [];
+    for (var i in comments) {
+      if (comments[i].body.search(':\\+1:') != -1 && $.inArray(comments[i].user.login, result) === -1) {
+        result.push(comments[i].user.login);
+      }
+    }
+
+    return result;
+  }
+
+  /*
+   * Searches through the commits and checks to see if any of them contain the requested commit hash
+   */
+  function ancestryContains(commits, commitHash) {
+    for (var i in commits) {
+      for (var j in commits[i].parents) {
+        var parent = commits[i].parents[j];
+        if (parent.sha == commitHash) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner) {
