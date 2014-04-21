@@ -80,7 +80,7 @@
 
       var iAmOwner = pullRequestData.user.login == username;
       var approvals = approvingComments(comments);
-      var iHaveApproved = $.inArray(username, approvals) !== -1;
+      var iHaveApproved = !!approvals[username];
       var isRebased = ancestryContains(commits, headCommit);
 
       var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
@@ -105,7 +105,7 @@
    * Returns the users that have a comment containing :+1:.
    */
   function approvingComments(comments) {
-    var result = [];
+    var result = {};
     for (var i in comments) {
       if (comments[i].body.search(':\\+1:') != -1 && $.inArray(comments[i].user.login, result) === -1) {
         if (!result[comments[i].user.login]) {
