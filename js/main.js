@@ -80,13 +80,7 @@
 
       var iAmOwner = pullRequestData.user.login == username;
       var approvals = approvingUsers(comments);
-      var iHaveApproved = false;
-      for (var i in approvals) {
-        if (approvals[i] == username) {
-          iHaveApproved = true;
-        }
-      }
-
+      var iHaveApproved = $.inArray(username, approvals) !== -1;
       var isRebased = ancestryContains(commits, headCommit);
 
       var html = buildDiv(approvals.length, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
