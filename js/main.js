@@ -79,6 +79,7 @@
       var statuses = statusesXhr[0];
       var approvals = 0;
       var iHaveApproved = false;
+      var iAmOwner = pullRequestData.user.login == username;
       for (var i in comments) {
         if (comments[i].body.search(':\\+1:') != -1) {
           approvals++;
@@ -99,7 +100,7 @@
         }
       }
 
-      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state);
+      var html = buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, statuses[0].state, iAmOwner);
 
       if (approvals >= 2) {
         $('#approved-prs').prepend(html);
@@ -109,14 +110,14 @@
     });
   }
 
-  function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state) {
+  function buildDiv(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner) {
     var aTag = '<a href="' + pullRequestData.html_url + '">Pull Request ' + pullRequestData.number + ' has ' + approvals +
       ' approvals and it is' + (isRebased ? '' : ' not') + ' rebased and the build ' + (state == 'success' ? 'was successful' : 'failed') + '</a>';
 
     if (approvals >= 2) {
       $('#approved-prs').prepend('<div style="font-weight:bold;">' + aTag + '</div>');
     } else {
-      $('#approved-prs').append('<div>' + aTag + (iHaveApproved ? '' : '<span style="font-weight:bold;">Needs your approval</span>') + '</div>');
+      $('#approved-prs').append('<div>' + aTag + (iHaveApproved || iAmOwner ? '' : '<span style="font-weight:bold;">Needs your approval</span>') + '</div>');
     }
   }
 
