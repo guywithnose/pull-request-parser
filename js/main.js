@@ -68,17 +68,17 @@
     });
   }
 
-  function parsePullRequest(username, headCommit, pullRequestData) {
-    saturatePullRequest(pullRequestData).done(function(pullRequestData) {
-      pullRequestData.iAmOwner = pullRequestData.user.login == username;
-      pullRequestData.approvals = approvingComments(pullRequestData.comments);
-      pullRequestData.iHaveApproved = !!pullRequestData.approvals[username];
-      pullRequestData.isRebased = ancestryContains(pullRequestData.commits, headCommit);
-      pullRequestData.state = getState(pullRequestData.statuses);
+  function parsePullRequest(username, headCommit, pullRequest) {
+    saturatePullRequest(pullRequest).done(function(pullRequest) {
+      pullRequest.iAmOwner = pullRequest.user.login == username;
+      pullRequest.approvals = approvingComments(pullRequest.comments);
+      pullRequest.iHaveApproved = !!pullRequest.approvals[username];
+      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
+      pullRequest.state = getState(pullRequest.statuses);
 
-      var html = buildRow(pullRequestData);
+      var html = buildRow(pullRequest);
 
-      if (pullRequestData.approvals.length >= 2) {
+      if (pullRequest.approvals.length >= 2) {
         $('#approved-prs tbody').prepend(html);
       } else {
         $('#approved-prs tbody').append(html);
@@ -86,13 +86,13 @@
     });
   }
 
-  function saturatePullRequest(pullRequestData) {
+  function saturatePullRequest(pullRequest) {
     return $.when(
-      $.ajax(pullRequestData.comments_url),
-      $.ajax(pullRequestData.commits_url),
-      $.ajax(pullRequestData.statuses_url)
+      $.ajax(pullRequest.comments_url),
+      $.ajax(pullRequest.commits_url),
+      $.ajax(pullRequest.statuses_url)
     ).then(function(comments, commits, statuses) {
-      return $.extend(pullRequestData, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
+      return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
     });
   };
 
@@ -138,44 +138,44 @@
     return false;
   }
 
-  function buildRow(pullRequestData) {
-    var numApprovals = Object.keys(pullRequestData.approvals).length;
+  function buildRow(pullRequest) {
+    var numApprovals = Object.keys(pullRequest.approvals).length;
 
-    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' +
-      approvalTitle(pullRequestData) + '">' + numApprovals + '</td><td>' + (pullRequestData.isRebased ? 'Y' : 'N') + '</td><td>' +
-      (pullRequestData.state == 'success' ? 'Y' : pullRequestData.state == 'none' ? '?' : 'N') + '</td><td>' +
-      (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner ? 'Y' : 'N') + '</td><td>' +
-      (pullRequestData.iAmOwner ? 'Y' : 'N') + '</td>';
+    var row = '<td><a href="' + pullRequest.html_url + '">' + pullRequest.number + '</a></td><td title="' + approvalTitle(pullRequest) + '">' +
+      numApprovals + '</td><td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td><td>' +
+      (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' ? '?' : 'N') + '</td><td>' +
+      (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td><td>' +
+      (pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
 
-    return '<tr class="' + rowClass(pullRequestData) + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
+    return '<tr class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
   }
 
-  function approvalTitle(pullRequestData) {
+  function approvalTitle(pullRequest) {
     var title = '';
-    for (var commentor in pullRequestData.approvals) {
-      for (var i in pullRequestData.approvals[commentor]) {
-        title += commentor + ': ' + pullRequestData.approvals[commentor][i] + '\n';
+    for (var commentor in pullRequest.approvals) {
+      for (var i in pullRequest.approvals[commentor]) {
+        title += commentor + ': ' + pullRequest.approvals[commentor][i] + '\n';
       }
     }
 
     return title;
   }
 
-  function rowClass(pullRequestData) {
-    var numApprovals = Object.keys(pullRequestData.approvals).length;
-    if (numApprovals >= 2 && pullRequestData.isRebased) {
+  function rowClass(pullRequest) {
+    var numApprovals = Object.keys(pullRequest.approvals).length;
+    if (numApprovals >= 2 && pullRequest.isRebased) {
       return 'success';
     }
     
-    if (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner) {
+    if (!pullRequest.iHaveApproved && !pullRequest.iAmOwner) {
       return 'info';
     }
     
-    if (pullRequestData.iAmOwner && !pullRequestData.isRebased) {
+    if (pullRequest.iAmOwner && !pullRequest.isRebased) {
       return 'warning';
     }
 
-    if (pullRequestData.state == 'failure') {
+    if (pullRequest.state == 'failure') {
       return 'danger';
     }
 
