@@ -72,13 +72,14 @@
     saturatePullRequest(pullRequest).done(function(pullRequest) {
       pullRequest.iAmOwner = pullRequest.user.login == username;
       pullRequest.approvals = approvingComments(pullRequest.comments);
+      pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
       pullRequest.iHaveApproved = !!pullRequest.approvals[username];
       pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
       pullRequest.state = getState(pullRequest.statuses);
 
       var html = buildRow(pullRequest);
 
-      if (pullRequest.approvals.length >= 2) {
+      if (pullRequest.numApprovals >= 2) {
         $('#approved-prs tbody').prepend(html);
       } else {
         $('#approved-prs tbody').append(html);
@@ -139,10 +140,8 @@
   }
 
   function buildRow(pullRequest) {
-    var numApprovals = Object.keys(pullRequest.approvals).length;
-
     var row = '<td><a href="' + pullRequest.html_url + '">' + pullRequest.number + '</a></td><td title="' + approvalTitle(pullRequest) + '">' +
-      numApprovals + '</td><td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td><td>' +
+      pullRequest.numApprovals + '</td><td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td><td>' +
       (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' ? '?' : 'N') + '</td><td>' +
       (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td><td>' +
       (pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
@@ -162,8 +161,7 @@
   }
 
   function rowClass(pullRequest) {
-    var numApprovals = Object.keys(pullRequest.approvals).length;
-    if (numApprovals >= 2 && pullRequest.isRebased) {
+    if (pullRequest.numApprovals >= 2 && pullRequest.isRebased) {
       return 'success';
     }
     
