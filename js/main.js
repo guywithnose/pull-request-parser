@@ -69,21 +69,13 @@
   }
 
   function parsePullRequest(username, headCommit, pullRequestData) {
-    $.when(
-        $.ajax(pullRequestData.comments_url),
-        $.ajax(pullRequestData.commits_url),
-        $.ajax(pullRequestData.statuses_url)
-    ).done(function(commentsXhr, commitsXhr, statusesXhr) {
-      var comments = commentsXhr[0];
-      var commits = commitsXhr[0];
-      var statuses = statusesXhr[0];
-
+    saturatePullRequest(pullRequestData).done(function(pullRequestData) {
       var iAmOwner = pullRequestData.user.login == username;
-      var approvals = approvingComments(comments);
+      var approvals = approvingComments(pullRequestData.comments);
       var iHaveApproved = !!approvals[username];
-      var isRebased = ancestryContains(commits, headCommit);
+      var isRebased = ancestryContains(pullRequestData.commits, headCommit);
 
-      var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
+      var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(pullRequestData.statuses), iAmOwner);
 
       if (approvals.length >= 2) {
         $('#approved-prs tbody').prepend(html);
@@ -92,6 +84,16 @@
       }
     });
   }
+
+  function saturatePullRequest(pullRequestData) {
+    return $.when(
+      $.ajax(pullRequestData.comments_url),
+      $.ajax(pullRequestData.commits_url),
+      $.ajax(pullRequestData.statuses_url)
+    ).then(function(comments, commits, statuses) {
+      return $.extend(pullRequestData, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
+    });
+  };
 
   function getState(statuses) {
     if (statuses.length == 0) {
