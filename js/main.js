@@ -1,6 +1,4 @@
 (function($){
-  var username;
-
   function updateSelectBoxes() {
     $('#owners').html('<option></option>');
     $('#repos').html('<option></option>');
