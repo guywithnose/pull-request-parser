@@ -1,6 +1,4 @@
 (function($){
-  var username;
-
   function updateSelectBoxes() {
     $('#owners').html('<option></option>');
     $('#repos').html('<option></option>');
@@ -68,30 +66,34 @@
     });
   }
 
-  function parsePullRequest(username, headCommit, pullRequestData) {
-    $.when(
-        $.ajax(pullRequestData.comments_url),
-        $.ajax(pullRequestData.commits_url),
-        $.ajax(pullRequestData.statuses_url)
-    ).done(function(commentsXhr, commitsXhr, statusesXhr) {
-      var comments = commentsXhr[0];
-      var commits = commitsXhr[0];
-      var statuses = statusesXhr[0];
+  function parsePullRequest(username, headCommit, pullRequest) {
+    saturatePullRequest(pullRequest).done(function(pullRequest) {
+      pullRequest.iAmOwner = pullRequest.user.login == username;
+      pullRequest.approvals = approvingComments(pullRequest.comments);
+      pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
+      pullRequest.iHaveApproved = !!pullRequest.approvals[username];
+      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
+      pullRequest.state = getState(pullRequest.statuses);
 
-      var iAmOwner = pullRequestData.user.login == username;
-      var approvals = approvingComments(comments);
-      var iHaveApproved = !!approvals[username];
-      var isRebased = ancestryContains(commits, headCommit);
+      var html = buildRow(pullRequest);
 
-      var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(statuses), iAmOwner);
-
-      if (approvals.length >= 2) {
+      if (pullRequest.numApprovals >= 2) {
         $('#approved-prs tbody').prepend(html);
       } else {
         $('#approved-prs tbody').append(html);
       }
     });
   }
+
+  function saturatePullRequest(pullRequest) {
+    return $.when(
+      $.ajax(pullRequest.comments_url),
+      $.ajax(pullRequest.commits_url),
+      $.ajax(pullRequest.statuses_url)
+    ).then(function(comments, commits, statuses) {
+      return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
+    });
+  };
 
   function getState(statuses) {
     if (statuses.length == 0) {
@@ -135,37 +137,45 @@
     return false;
   }
 
-  function buildRow(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner, table) {
-    var rowClass = '';
-    var numApprovals = Object.keys(approvals).length;
-    if (numApprovals >= 2 && isRebased) {
-      rowClass = 'success';
-    }
-    
-    if (!iHaveApproved && !iAmOwner) {
-      rowClass = 'info';
-    }
-    
-    if (iAmOwner && !isRebased) {
-      rowClass = 'warning';
-    }
+  function buildRow(pullRequest) {
+    var row = '<td><a href="' + pullRequest.html_url + '">' + pullRequest.number + '</a></td><td title="' + approvalTitle(pullRequest) + '">' +
+      pullRequest.numApprovals + '</td><td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td><td>' +
+      (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' ? '?' : 'N') + '</td><td>' +
+      (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td><td>' +
+      (pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
 
-    if (state == 'failure') {
-      rowClass = 'danger';
-    }
+    return '<tr class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
+  }
 
-    var approvalTitle = '';
-    for (var commentor in approvals) {
-      for (var i in approvals[commentor]) {
-        approvalTitle += commentor + ': ' + approvals[commentor][i] + '\n';
+  function approvalTitle(pullRequest) {
+    var title = '';
+    for (var commentor in pullRequest.approvals) {
+      for (var i in pullRequest.approvals[commentor]) {
+        title += commentor + ': ' + pullRequest.approvals[commentor][i] + '\n';
       }
     }
 
-    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' +
-      numApprovals + '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') +
-      '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
+    return title;
+  }
 
-    return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
+  function rowClass(pullRequest) {
+    if (pullRequest.numApprovals >= 2 && pullRequest.isRebased) {
+      return 'success';
+    }
+    
+    if (!pullRequest.iHaveApproved && !pullRequest.iAmOwner) {
+      return 'info';
+    }
+    
+    if (pullRequest.iAmOwner && !pullRequest.isRebased) {
+      return 'warning';
+    }
+
+    if (pullRequest.state == 'failure') {
+      return 'danger';
+    }
+
+    return '';
   }
 
   function init() {
