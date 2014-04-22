@@ -70,14 +70,15 @@
 
   function parsePullRequest(username, headCommit, pullRequestData) {
     saturatePullRequest(pullRequestData).done(function(pullRequestData) {
-      var iAmOwner = pullRequestData.user.login == username;
-      var approvals = approvingComments(pullRequestData.comments);
-      var iHaveApproved = !!approvals[username];
-      var isRebased = ancestryContains(pullRequestData.commits, headCommit);
+      pullRequestData.iAmOwner = pullRequestData.user.login == username;
+      pullRequestData.approvals = approvingComments(pullRequestData.comments);
+      pullRequestData.iHaveApproved = !!pullRequestData.approvals[username];
+      pullRequestData.isRebased = ancestryContains(pullRequestData.commits, headCommit);
+      pullRequestData.state = getState(pullRequestData.statuses);
 
-      var html = buildRow(approvals, pullRequestData, iHaveApproved, isRebased, getState(pullRequestData.statuses), iAmOwner);
+      var html = buildRow(pullRequestData);
 
-      if (approvals.length >= 2) {
+      if (pullRequestData.approvals.length >= 2) {
         $('#approved-prs tbody').prepend(html);
       } else {
         $('#approved-prs tbody').append(html);
@@ -137,35 +138,37 @@
     return false;
   }
 
-  function buildRow(approvals, pullRequestData, iHaveApproved, isRebased, state, iAmOwner, table) {
+  function buildRow(pullRequestData) {
     var rowClass = '';
-    var numApprovals = Object.keys(approvals).length;
-    if (numApprovals >= 2 && isRebased) {
+    var numApprovals = Object.keys(pullRequestData.approvals).length;
+    if (numApprovals >= 2 && pullRequestData.isRebased) {
       rowClass = 'success';
     }
     
-    if (!iHaveApproved && !iAmOwner) {
+    if (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner) {
       rowClass = 'info';
     }
     
-    if (iAmOwner && !isRebased) {
+    if (pullRequestData.iAmOwner && !pullRequestData.isRebased) {
       rowClass = 'warning';
     }
 
-    if (state == 'failure') {
+    if (pullRequestData.state == 'failure') {
       rowClass = 'danger';
     }
 
     var approvalTitle = '';
-    for (var commentor in approvals) {
-      for (var i in approvals[commentor]) {
-        approvalTitle += commentor + ': ' + approvals[commentor][i] + '\n';
+    for (var commentor in pullRequestData.approvals) {
+      for (var i in pullRequestData.approvals[commentor]) {
+        approvalTitle += commentor + ': ' + pullRequestData.approvals[commentor][i] + '\n';
       }
     }
 
     var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' +
-      numApprovals + '</td><td>' + (isRebased ? 'Y' : 'N') + '</td><td>' + (state == 'success' ? 'Y' : state == 'none' ? '?' : 'N') +
-      '</td><td>' +  (!iHaveApproved && !iAmOwner ? 'Y' : 'N') + '</td><td>' + (iAmOwner ? 'Y' : 'N') + '</td>';
+      numApprovals + '</td><td>' + (pullRequestData.isRebased ? 'Y' : 'N') + '</td><td>' +
+      (pullRequestData.state == 'success' ? 'Y' : pullRequestData.state == 'none' ? '?' : 'N') + '</td><td>' +
+      (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner ? 'Y' : 'N') + '</td><td>' +
+      (pullRequestData.iAmOwner ? 'Y' : 'N') + '</td>';
 
     return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
   }
