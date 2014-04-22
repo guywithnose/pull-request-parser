@@ -140,20 +140,25 @@
 
   function buildRow(pullRequestData) {
     var numApprovals = Object.keys(pullRequestData.approvals).length;
-    var approvalTitle = '';
-    for (var commentor in pullRequestData.approvals) {
-      for (var i in pullRequestData.approvals[commentor]) {
-        approvalTitle += commentor + ': ' + pullRequestData.approvals[commentor][i] + '\n';
-      }
-    }
 
-    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' + approvalTitle + '">' +
-      numApprovals + '</td><td>' + (pullRequestData.isRebased ? 'Y' : 'N') + '</td><td>' +
+    var row = '<td><a href="' + pullRequestData.html_url + '">' + pullRequestData.number + '</a></td><td title="' +
+      approvalTitle(pullRequestData) + '">' + numApprovals + '</td><td>' + (pullRequestData.isRebased ? 'Y' : 'N') + '</td><td>' +
       (pullRequestData.state == 'success' ? 'Y' : pullRequestData.state == 'none' ? '?' : 'N') + '</td><td>' +
       (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner ? 'Y' : 'N') + '</td><td>' +
       (pullRequestData.iAmOwner ? 'Y' : 'N') + '</td>';
 
     return '<tr class="' + rowClass(pullRequestData) + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
+  }
+
+  function approvalTitle(pullRequestData) {
+    var title = '';
+    for (var commentor in pullRequestData.approvals) {
+      for (var i in pullRequestData.approvals[commentor]) {
+        title += commentor + ': ' + pullRequestData.approvals[commentor][i] + '\n';
+      }
+    }
+
+    return title;
   }
 
   function rowClass(pullRequestData) {
@@ -174,7 +179,7 @@
       return 'danger';
     }
 
-    return ''
+    return '';
   }
 
   function init() {
