@@ -139,24 +139,7 @@
   }
 
   function buildRow(pullRequestData) {
-    var rowClass = '';
     var numApprovals = Object.keys(pullRequestData.approvals).length;
-    if (numApprovals >= 2 && pullRequestData.isRebased) {
-      rowClass = 'success';
-    }
-    
-    if (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner) {
-      rowClass = 'info';
-    }
-    
-    if (pullRequestData.iAmOwner && !pullRequestData.isRebased) {
-      rowClass = 'warning';
-    }
-
-    if (pullRequestData.state == 'failure') {
-      rowClass = 'danger';
-    }
-
     var approvalTitle = '';
     for (var commentor in pullRequestData.approvals) {
       for (var i in pullRequestData.approvals[commentor]) {
@@ -170,7 +153,28 @@
       (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner ? 'Y' : 'N') + '</td><td>' +
       (pullRequestData.iAmOwner ? 'Y' : 'N') + '</td>';
 
-    return '<tr class="' + rowClass + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
+    return '<tr class="' + rowClass(pullRequestData) + '" data-link="' + pullRequestData.html_url + '">' + row + + '</tr>';
+  }
+
+  function rowClass(pullRequestData) {
+    var numApprovals = Object.keys(pullRequestData.approvals).length;
+    if (numApprovals >= 2 && pullRequestData.isRebased) {
+      return 'success';
+    }
+    
+    if (!pullRequestData.iHaveApproved && !pullRequestData.iAmOwner) {
+      return 'info';
+    }
+    
+    if (pullRequestData.iAmOwner && !pullRequestData.isRebased) {
+      return 'warning';
+    }
+
+    if (pullRequestData.state == 'failure') {
+      return 'danger';
+    }
+
+    return ''
   }
 
   function init() {
