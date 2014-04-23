@@ -138,11 +138,12 @@
   }
 
   function buildRow(pullRequest) {
-    var row = '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td><td title="' + approvalTitle(pullRequest) + '">' +
-      pullRequest.numApprovals + '</td><td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td><td>' +
-      (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' || pullRequest.state == 'pending' ? '?' : 'N') + '</td><td>' +
-      (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td><td>' +
-      (pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
+    var row = '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td>' +
+      '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
+      '<td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td>' +
+      '<td>' + (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' || pullRequest.state == 'pending' ? '?' : 'N') + '</td>' +
+      '<td>' + (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td>' +
+      '<td>' + (pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
 
     return '<tr class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
   }
