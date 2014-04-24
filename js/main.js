@@ -181,7 +181,8 @@
 
   function init() {
     $.ajaxSetup({
-      dataType: "json"
+      dataType: "json",
+      cache: false
     });
 
     if (localStorage.github_access_token) {
