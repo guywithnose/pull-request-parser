@@ -57,13 +57,15 @@
         $.ajax('https://api.github.com/user'),
         $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
         $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/pulls')
-    ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
-      var username = userXhr[0].login;
-      var headCommit = masterXhr[0].sha;
-      for (var i in pullRequestDataXhr[0]) {
-        parsePullRequest(username, headCommit, pullRequestDataXhr[0][i]);
-      }
-    });
+    ).done(parseAllPullRequests);
+  }
+
+  function parseAllPullRequests(userXhr, masterXhr, pullRequestDataXhr) {
+    var username = userXhr[0].login;
+    var headCommit = masterXhr[0].sha;
+    for (var i in pullRequestDataXhr[0]) {
+      parsePullRequest(username, headCommit, pullRequestDataXhr[0][i]);
+    }
   }
 
   function parsePullRequest(username, headCommit, pullRequest) {
