@@ -57,12 +57,28 @@
         $.ajax('https://api.github.com/user'),
         $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
         $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/pulls')
+    ).done(parseAllPullRequests);
+  }
+
+  function parseAllPullRequests(userXhr, masterXhr, pullRequestDataXhr) {
+    var username = userXhr[0].login;
+    var headCommit = masterXhr[0].sha;
+    for (var i in pullRequestDataXhr[0]) {
+      parsePullRequest(username, headCommit, pullRequestDataXhr[0][i]);
+    }
+  }
+
+  function refreshPr() {
+    var owner = $('#owner').val();
+    var repo = $('#repoName').val();
+    var prNum = $(this).parent().siblings('td:first').text();
+    $(this).parent().parent().remove();
+    $.when(
+        $.ajax('https://api.github.com/user'),
+        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
+        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/pulls/' + prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
-      var username = userXhr[0].login;
-      var headCommit = masterXhr[0].sha;
-      for (var i in pullRequestDataXhr[0]) {
-        parsePullRequest(username, headCommit, pullRequestDataXhr[0][i]);
-      }
+      parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
   }
 
@@ -144,7 +160,8 @@
       '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
       '<td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td>' +
       '<td>' + (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' || pullRequest.state == 'pending' ? '?' : 'N') + '</td>' +
-      '<td>' + (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td>';
+      '<td>' + (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td>' +
+      '<td><button class="refresh">Refresh</button></td>';
 
     return '<tr class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
   }
@@ -222,6 +239,8 @@
     $('#repos').change(function(){
       $('#repoName').val($(this).val());
     });
+
+    $('#approved-prs').on('click', '.refresh', refreshPr);
   }
 
   $(init);
