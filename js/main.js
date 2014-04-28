@@ -186,7 +186,7 @@
       return 'info';
     }
     
-    if (pullRequest.iAmOwner && !pullRequest.isRebased) {
+    if (pullRequest.iAmOwner && !pullRequest.isRebased && pullRequest.numApprovals >= 2) {
       return 'warning';
     }
 
