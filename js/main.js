@@ -125,7 +125,7 @@
   function approvingComments(comments) {
     var result = {};
     for (var i in comments) {
-      if (comments[i].body.search(':\\+1:') != -1 && $.inArray(comments[i].user.login, result) === -1) {
+      if (isApproval(comments[i]) && $.inArray(comments[i].user.login, result) === -1) {
         if (!result[comments[i].user.login]) {
           result[comments[i].user.login] = [];
         }
@@ -135,6 +135,10 @@
     }
 
     return result;
+  }
+
+  function isApproval(comment) {
+    return comment.body.search(':\\+1:') != -1 || comment.body.search(':thumbsup:') != -1;
   }
 
   /*
