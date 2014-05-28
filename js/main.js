@@ -1,14 +1,13 @@
 (function($){
   function updateSelectBoxes() {
-    $('#owners').html('<option></option>');
-    $('#repos').html('<option></option>');
-    if (localStorage.owners) {
-      var owners = JSON.parse(localStorage.owners);
-      for (var i in owners) {
-          $('#owners').append('<option>' + owners[i] + '</option>');
+    $('#repoPathSelect').html('<option></option>');
+    if (localStorage.repoPaths) {
+      var repoPaths = JSON.parse(localStorage.repoPaths);
+      for (var i in repoPaths) {
+          $('#repoPathSelect').append('<option>' + repoPaths[i] + '</option>');
       }
 
-      $('#owners').show();
+      $('#repoPathSelect').show();
     }
 
     if (localStorage.repos) {
@@ -21,42 +20,29 @@
     }
   }
 
-  function addFavorites(newOwner, newRepo) {
-      var owners;
-      if (localStorage.owners) {
-        owners = JSON.parse(localStorage.owners);
+  function addFavorites(repoPath) {
+      var repoPaths;
+      if (localStorage.repoPaths) {
+        repoPaths = JSON.parse(localStorage.repoPaths);
       } else {
-        owners = [];
+        repoPaths = [];
       }
 
-      if (owners.indexOf(newOwner) == -1) {
-        owners.push(newOwner);
+      if (repoPaths.indexOf(repoPath) == -1) {
+        repoPaths.push(repoPath);
       }
 
-      localStorage.owners = JSON.stringify(owners);
-
-      var repos;
-      if (localStorage.repos) {
-        repos = JSON.parse(localStorage.repos);
-      } else {
-        repos = [];
-      }
-
-      if (repos.indexOf(newRepo) == -1) {
-        repos.push(newRepo);
-      }
-
-      localStorage.repos = JSON.stringify(repos);
+      localStorage.repoPaths = JSON.stringify(repoPaths);
 
       updateSelectBoxes();
   }
 
-  function parsePullRequests(owner, repo) {
+  function parsePullRequests(repoPath) {
     $('#approved-prs tbody').html('');
     $.when(
         $.ajax('https://api.github.com/user'),
-        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
-        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/pulls')
+        $.ajax('https://api.github.com/repos/' + repoPath + '/commits/master'),
+        $.ajax('https://api.github.com/repos/' + repoPath + '/pulls')
     ).done(parseAllPullRequests);
   }
 
@@ -69,14 +55,13 @@
   }
 
   function refreshPr() {
-    var owner = $('#owner').val();
-    var repo = $('#repoName').val();
+    var repoPath = $('#repoPath').val();
     var prNum = $(this).parent().siblings('td:first').text();
     $(this).parent().parent().remove();
     $.when(
         $.ajax('https://api.github.com/user'),
-        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/commits/master'),
-        $.ajax('https://api.github.com/repos/' + owner + '/' + repo + '/pulls/' + prNum)
+        $.ajax('https://api.github.com/repos/' + repoPath + '/commits/master'),
+        $.ajax('https://api.github.com/repos/' + repoPath + '/pulls/' + prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
       parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
@@ -228,20 +213,15 @@
     });
 
     $('#parsePullRequests').click(function() {
-      var owner = $('#owner').val();
-      var repo = $('#repoName').val();
+      var repoPath = $('#repoPath').val();
 
-      addFavorites(owner, repo);
+      addFavorites(repoPath);
 
-      parsePullRequests(owner, repo);
+      parsePullRequests(repoPath);
     });
 
-    $('#owners').change(function(){
-      $('#owner').val($(this).val());
-    });
-
-    $('#repos').change(function(){
-      $('#repoName').val($(this).val());
+    $('#repoPathSelect').change(function(){
+      $('#repoPath').val($(this).val());
     });
 
     $('#approved-prs').on('click', '.refresh', refreshPr);
