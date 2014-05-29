@@ -38,12 +38,20 @@
   }
 
   function parsePullRequests(repoPath) {
-    $('#approved-prs tbody').html('');
     $.when(
         $.ajax('https://api.github.com/user'),
         $.ajax('https://api.github.com/repos/' + repoPath + '/commits/master'),
         $.ajax('https://api.github.com/repos/' + repoPath + '/pulls')
     ).done(parseAllPullRequests);
+  }
+
+  function parseAllRepos() {
+    if (localStorage.repoPaths) {
+      var repoPaths = JSON.parse(localStorage.repoPaths);
+      $.each(repoPaths, function(index, repoPath) {
+        parsePullRequests(repoPath);
+      });
+    }
   }
 
   function parseAllPullRequests(userXhr, masterXhr, pullRequestDataXhr) {
@@ -55,8 +63,9 @@
   }
 
   function refreshPr() {
-    var repoPath = $('#repoPath').val();
-    var prNum = $(this).parent().siblings('td:first').text();
+    var row = $(this).parents('tr');
+    var repoPath = row.data('repoPath');
+    var prNum = row.data('prNum');
     $(this).parent().parent().remove();
     $.when(
         $.ajax('https://api.github.com/user'),
@@ -143,7 +152,8 @@
   }
 
   function buildRow(pullRequest) {
-    var row = '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td>' +
+    var row = '<td>' + pullRequest.base.repo.full_name + '</td>' +
+      '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td>' +
       '<td>' + pullRequest.user.login + '</td>' +
       '<td>' + pullRequest.head.ref + '</td>' +
       '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
@@ -152,7 +162,7 @@
       '<td>' + (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td>' +
       '<td><button class="refresh">Refresh</button></td>';
 
-    return '<tr class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
+    return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name + '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
   }
 
   function approvalTitle(pullRequest) {
@@ -217,7 +227,13 @@
 
       addFavorites(repoPath);
 
+      $('#approved-prs tbody').html('');
       parsePullRequests(repoPath);
+    });
+
+    $('#checkAllRepos').click(function() {
+      $('#approved-prs tbody').html('');
+      parseAllRepos(repoPath);
     });
 
     $('#repoPathSelect').change(function(){
