@@ -1,56 +1,47 @@
-(function($){
+(function($) {
+  var apiUrl = 'https://api.github.com';
   function updateSelectBoxes() {
     $('#repoPathSelect').html('<option></option>');
-    if (localStorage.repoPaths) {
-      var repoPaths = JSON.parse(localStorage.repoPaths);
+    var repoPaths = getRepoPaths();
+    if (repoPaths) {
       for (var i in repoPaths) {
           $('#repoPathSelect').append('<option>' + repoPaths[i] + '</option>');
       }
 
       $('#repoPathSelect').show();
     }
-
-    if (localStorage.repos) {
-      var repos = JSON.parse(localStorage.repos);
-      for (var i in repos) {
-          $('#repos').append('<option>' + repos[i] + '</option>');
-      }
-
-      $('#repos').show();
-    }
-  }
-
-  function addFavorites(repoPath) {
-      var repoPaths;
-      if (localStorage.repoPaths) {
-        repoPaths = JSON.parse(localStorage.repoPaths);
-      } else {
-        repoPaths = [];
-      }
-
-      if (repoPaths.indexOf(repoPath) == -1) {
-        repoPaths.push(repoPath);
-      }
-
-      localStorage.repoPaths = JSON.stringify(repoPaths);
-
-      updateSelectBoxes();
   }
 
   function parsePullRequests(repoPath) {
     $.when(
-        $.ajax('https://api.github.com/user'),
-        $.ajax('https://api.github.com/repos/' + repoPath + '/commits/master'),
-        $.ajax('https://api.github.com/repos/' + repoPath + '/pulls')
+        $.ajax(apiUrl + '/user'),
+        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
+        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls')
     ).done(parseAllPullRequests);
   }
 
   function parseAllRepos() {
-    if (localStorage.repoPaths) {
-      var repoPaths = JSON.parse(localStorage.repoPaths);
+    var repoPaths = getRepoPaths();
+    if (repoPaths.indexOf(repoPath) == -1) {
       $.each(repoPaths, function(index, repoPath) {
         parsePullRequests(repoPath);
       });
+    }
+  }
+
+  function getRepoPaths() {
+    if (localStorage['repos:' + apiUrl]) {
+      return JSON.parse(localStorage['repos:' + apiUrl]);
+    }
+
+    return [];
+  }
+
+  function addRepoPath(repoPath) {
+    var repoPaths = getRepoPaths();
+    if (repoPaths.indexOf(repoPath) == -1) {
+      repoPaths.push(repoPath);
+      localStorage['repos:' + apiUrl] = JSON.stringify(repoPaths);
     }
   }
 
@@ -68,23 +59,37 @@
     var prNum = row.data('prNum');
     $(this).parent().parent().remove();
     $.when(
-        $.ajax('https://api.github.com/user'),
-        $.ajax('https://api.github.com/repos/' + repoPath + '/commits/master'),
-        $.ajax('https://api.github.com/repos/' + repoPath + '/pulls/' + prNum)
+        $.ajax(apiUrl + '/user'),
+        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
+        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls/' + prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
       parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
   }
 
   function parsePullRequest(username, headCommit, pullRequest) {
-    saturatePullRequest(pullRequest).done(function(pullRequest) {
+    saturatePullRequest(pullRequest).then(function(pullRequest) {
       pullRequest.iAmOwner = pullRequest.user.login == username;
       pullRequest.approvals = approvingComments(pullRequest.comments);
       pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
       pullRequest.iHaveApproved = !!pullRequest.approvals[username];
-      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
-      pullRequest.state = getState(pullRequest.statuses);
+      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit) ? 'Y' : 'N';
+      var state = getState(pullRequest.statuses);
+      pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
+      pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
+      buildHtml(pullRequest);
+    }, function(pullRequest) {
+      pullRequest.numApprovals = '?';
+      pullRequest.iHaveApproved = false;
+      pullRequest.isRebased = '?';
+      pullRequest.state = '?';
+      pullRequest.needsMyApproval = '?';
+      buildHtml(pullRequest);
+    });
+  }
+
+  function buildHtml(pullRequest) {
       var html = buildRow(pullRequest);
 
       if (pullRequest.numApprovals >= 2) {
@@ -92,14 +97,24 @@
       } else {
         $('#approved-prs tbody').append(html);
       }
-    });
   }
 
   function saturatePullRequest(pullRequest) {
+    // This is a crude way of detecting that we are on an old version of the API where the urls are broken and need to be built manually.
+    if (pullRequest.statuses_url) {
+      return $.when(
+        $.ajax(pullRequest.comments_url),
+        $.ajax(pullRequest.commits_url),
+        $.ajax(pullRequest.statuses_url)
+      ).then(function(comments, commits, statuses) {
+        return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
+      });
+    }
+
     return $.when(
       $.ajax(pullRequest.comments_url),
-      $.ajax(pullRequest.commits_url),
-      $.ajax(pullRequest.statuses_url)
+      $.ajax(pullRequest.url + '/commits'),
+      $.ajax(pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
     ).then(function(comments, commits, statuses) {
       return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
     });
@@ -157,9 +172,9 @@
       '<td>' + pullRequest.user.login + '</td>' +
       '<td>' + pullRequest.head.ref + '</td>' +
       '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
-      '<td>' + (pullRequest.isRebased ? 'Y' : 'N') + '</td>' +
-      '<td>' + (pullRequest.state == 'success' ? 'Y' : pullRequest.state == 'none' || pullRequest.state == 'pending' ? '?' : 'N') + '</td>' +
-      '<td>' + (!pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N') + '</td>' +
+      '<td>' + pullRequest.isRebased + '</td>' +
+      '<td>' + pullRequest.state + '</td>' +
+      '<td>' + pullRequest.needsMyApproval + '</td>' +
       '<td><button class="refresh">Refresh</button></td>';
 
     return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name + '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
@@ -196,15 +211,28 @@
     return '';
   }
 
+  function getAccessToken() {
+    return localStorage['github_access_token:' + apiUrl];
+  }
+
+  function setAccessToken(accessToken) {
+    localStorage['github_access_token:' + apiUrl] = accessToken;
+  }
+
   function init() {
     $.ajaxSetup({
       dataType: "json",
       cache: false
     });
 
-    if (localStorage.github_access_token) {
+    var urlMatches = location.href.match(/apiUrl=([^&]*)/);
+    if (urlMatches != null) {
+      apiUrl = urlMatches[1];
+    }
+
+    if (getAccessToken()) {
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + localStorage.github_access_token}
+        headers: {Authorization: 'token ' + getAccessToken()}
       });
       $('#pickRepo').show();
     } else {
@@ -214,9 +242,9 @@
     updateSelectBoxes();
 
     $('#saveAccessToken').click(function() {
-      localStorage.github_access_token = $('#accessToken').val();
+      setAccessToken($('#accessToken').val());
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + localStorage.github_access_token}
+        headers: {Authorization: 'token ' + getAccessToken()}
       });
       $('#getAccessToken').hide();
       $('#pickRepo').show();
@@ -225,7 +253,8 @@
     $('#parsePullRequests').click(function() {
       var repoPath = $('#repoPath').val();
 
-      addFavorites(repoPath);
+      addRepoPath(repoPath);
+      updateSelectBoxes();
 
       $('#approved-prs tbody').html('');
       parsePullRequests(repoPath);
