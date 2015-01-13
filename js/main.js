@@ -252,13 +252,15 @@
     });
 
     $('#parsePullRequests').click(function() {
-      var repoPath = $('#repoPath').val();
+      var repoPaths = $('#repoPath').val().split('\n');
 
-      addRepoPath(repoPath);
+      $.each(repoPaths, function(index, repoPath) {
+        addRepoPath(repoPath);
+      });
       updateSelectBoxes();
 
       $('#approved-prs tbody').html('');
-      parsePullRequests(repoPath);
+      parseRepos(repoPaths);
     });
 
     $('#checkAllRepos').click(function() {
