@@ -20,8 +20,7 @@
     ).done(parseAllPullRequests);
   }
 
-  function parseAllRepos() {
-    var repoPaths = getRepoPaths();
+  function parseRepos(repoPaths) {
     if (repoPaths.indexOf(repoPath) == -1) {
       $.each(repoPaths, function(index, repoPath) {
         parsePullRequests(repoPath);
@@ -264,7 +263,7 @@
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseAllRepos();
+      parseRepos(getRepoPaths());
     });
 
     $('#repoPathSelect').change(function(){
