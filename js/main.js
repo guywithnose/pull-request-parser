@@ -129,7 +129,7 @@
   }
 
   /*
-   * Returns the users that have a comment containing :+1:.
+   * Returns the users that have a comment containing :+1: or LGTM.
    */
   function approvingComments(comments) {
     var result = {};
@@ -147,7 +147,9 @@
   }
 
   function isApproval(comment) {
-    return comment.body.search(':\\+1:') != -1 || comment.body.search(':thumbsup:') != -1;
+    return comment.body.search(':\\+1:') != -1 ||
+      comment.body.search(':thumbsup:') != -1 ||
+      comment.body.search('LGTM') != -1;
   }
 
   /*
