@@ -264,7 +264,7 @@
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseAllRepos(repoPath);
+      parseAllRepos();
     });
 
     $('#repoPathSelect').change(function(){
