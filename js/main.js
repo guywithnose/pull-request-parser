@@ -20,8 +20,7 @@
     ).done(parseAllPullRequests);
   }
 
-  function parseAllRepos() {
-    var repoPaths = getRepoPaths();
+  function parseRepos(repoPaths) {
     if (repoPaths.indexOf(repoPath) == -1) {
       $.each(repoPaths, function(index, repoPath) {
         parsePullRequests(repoPath);
@@ -253,18 +252,20 @@
     });
 
     $('#parsePullRequests').click(function() {
-      var repoPath = $('#repoPath').val();
+      var repoPaths = $('#repoPath').val().split('\n');
 
-      addRepoPath(repoPath);
+      $.each(repoPaths, function(index, repoPath) {
+        addRepoPath(repoPath);
+      });
       updateSelectBoxes();
 
       $('#approved-prs tbody').html('');
-      parsePullRequests(repoPath);
+      parseRepos(repoPaths);
     });
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseAllRepos(repoPath);
+      parseRepos(getRepoPaths());
     });
 
     $('#repoPathSelect').change(function(){
