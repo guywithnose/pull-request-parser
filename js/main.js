@@ -1,5 +1,7 @@
 (function($) {
   var apiUrl = 'https://api.github.com';
+  var MIN_APPROVALS = 2;
+
   function updateSelectBoxes() {
     $('#repoPathSelect').html('<option></option>');
     var repoPaths = getRepoPaths();
@@ -71,6 +73,7 @@
       pullRequest.iAmOwner = pullRequest.user.login == username;
       pullRequest.approvals = approvingComments(pullRequest.comments);
       pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
+      pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
       pullRequest.iHaveApproved = !!pullRequest.approvals[username];
       pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit) ? 'Y' : 'N';
       var state = getState(pullRequest.statuses);
@@ -91,7 +94,7 @@
   function buildHtml(pullRequest) {
       var html = buildRow(pullRequest);
 
-      if (pullRequest.numApprovals >= 2) {
+      if (pullRequest.approved) {
         $('#approved-prs tbody').prepend(html);
       } else {
         $('#approved-prs tbody').append(html);
@@ -193,7 +196,7 @@
   }
 
   function rowClass(pullRequest) {
-    if (pullRequest.numApprovals >= 2 && pullRequest.isRebased) {
+    if (pullRequest.approved && pullRequest.isRebased) {
       return 'success';
     }
     
