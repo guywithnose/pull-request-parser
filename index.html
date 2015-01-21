@@ -48,5 +48,14 @@
   </div>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
   <script src="js/main.js"></script>
+  <script type="text/javascript">
+    var urlMatches = location.href.match(/apiUrl=([^&]*)/);
+    var apiUrl = urlMatches ? urlMatches[1] : 'https://api.github.com';
+
+    var approvalMatches = location.href.match(/minApprovals=([^&]*)/);
+    var minApprovals = approvalMatches ? parseInt(approvalMatches[1]) : 2;
+
+    var pullRequestParser = new PullRequestParser({apiUrl: apiUrl, minApprovals: minApprovals});
+  </script>
 </body>
 </html>

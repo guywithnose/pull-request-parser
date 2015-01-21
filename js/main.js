@@ -1,4 +1,4 @@
-(function($) {
+(function(window, $) {
   var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
@@ -223,16 +223,16 @@
     localStorage['github_access_token:' + apiUrl] = accessToken;
   }
 
-  function init() {
+  window.PullRequestParser = function(options) {
+    options = options || {};
+
+    apiUrl = options.apiUrl || apiUrl;
+    MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
+
     $.ajaxSetup({
       dataType: "json",
       cache: false
     });
-
-    var urlMatches = location.href.match(/apiUrl=([^&]*)/);
-    if (urlMatches != null) {
-      apiUrl = urlMatches[1];
-    }
 
     if (getAccessToken()) {
       $.ajaxSetup({
@@ -276,7 +276,5 @@
     });
 
     $('#approved-prs').on('click', '.refresh', refreshPr);
-  }
-
-  $(init);
-}(jQuery))
+  };
+}(window, jQuery))
