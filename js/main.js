@@ -75,7 +75,8 @@
       pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
       pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
       pullRequest.iHaveApproved = !!pullRequest.approvals[username];
-      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit) ? 'Y' : 'N';
+      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
+      pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
       var state = getState(pullRequest.statuses);
       pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
       pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
@@ -84,7 +85,8 @@
     }, function(pullRequest) {
       pullRequest.numApprovals = '?';
       pullRequest.iHaveApproved = false;
-      pullRequest.isRebased = '?';
+      pullRequest.isRebased = false;
+      pullRequest.rebasedText = '?';
       pullRequest.state = '?';
       pullRequest.needsMyApproval = '?';
       buildHtml(pullRequest);
@@ -176,7 +178,7 @@
       '<td>' + pullRequest.user.login + '</td>' +
       '<td>' + pullRequest.head.ref + '</td>' +
       '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
-      '<td>' + pullRequest.isRebased + '</td>' +
+      '<td>' + pullRequest.rebasedText + '</td>' +
       '<td>' + pullRequest.state + '</td>' +
       '<td>' + pullRequest.needsMyApproval + '</td>' +
       '<td><button class="refresh">Refresh</button></td>';
