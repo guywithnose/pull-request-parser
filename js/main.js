@@ -223,16 +223,15 @@
     localStorage['github_access_token:' + apiUrl] = accessToken;
   }
 
-  window.PullRequestParser = function() {
+  window.PullRequestParser = function(options) {
+    options = options || {};
+
+    apiUrl = options.apiUrl || apiUrl;
+
     $.ajaxSetup({
       dataType: "json",
       cache: false
     });
-
-    var urlMatches = location.href.match(/apiUrl=([^&]*)/);
-    if (urlMatches != null) {
-      apiUrl = urlMatches[1];
-    }
 
     if (getAccessToken()) {
       $.ajaxSetup({
