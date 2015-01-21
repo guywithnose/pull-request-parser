@@ -1,4 +1,4 @@
-(function($) {
+(function(window, $) {
   var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
@@ -223,7 +223,7 @@
     localStorage['github_access_token:' + apiUrl] = accessToken;
   }
 
-  function init() {
+  window.PullRequestParser = function() {
     $.ajaxSetup({
       dataType: "json",
       cache: false
@@ -276,7 +276,5 @@
     });
 
     $('#approved-prs').on('click', '.refresh', refreshPr);
-  }
-
-  $(init);
-}(jQuery))
+  };
+}(window, jQuery))
