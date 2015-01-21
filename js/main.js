@@ -227,6 +227,7 @@
     options = options || {};
 
     apiUrl = options.apiUrl || apiUrl;
+    MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
 
     $.ajaxSetup({
       dataType: "json",
