@@ -224,7 +224,7 @@
     localStorage['github_access_token:' + apiUrl] = accessToken;
   }
 
-  window.PullRequestParser = function(options) {
+  var PullRequestParser = function(options) {
     options = options || {};
 
     apiUrl = options.apiUrl || apiUrl;
@@ -278,4 +278,6 @@
 
     $('#approved-prs').on('click', '.refresh', refreshPr);
   };
+
+  window.PullRequestParser = PullRequestParser;
 }(window, jQuery))
