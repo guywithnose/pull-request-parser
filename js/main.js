@@ -1,5 +1,4 @@
 (function(window, $) {
-  var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
   var GhApi = function(apiUrl) {
@@ -247,7 +246,7 @@
   var PullRequestParser = function(options) {
     options = options || {};
 
-    apiUrl = options.apiUrl || apiUrl;
+    var apiUrl = options.apiUrl || 'https://api.github.com';
     MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
 
     $.ajaxSetup({
