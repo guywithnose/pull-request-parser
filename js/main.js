@@ -2,9 +2,8 @@
   var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
-  function updateSelectBoxes() {
+  function updateSelectBoxes(repoPaths) {
     $('#repoPathSelect').html('<option></option>');
-    var repoPaths = getRepoPaths();
     if (repoPaths) {
       for (var i in repoPaths) {
           $('#repoPathSelect').append('<option>' + repoPaths[i] + '</option>');
@@ -245,7 +244,7 @@
       $('#getAccessToken').show();
     }
 
-    updateSelectBoxes();
+    updateSelectBoxes(getRepoPaths());
 
     $('#saveAccessToken').click(function() {
       setAccessToken($('#accessToken').val());
@@ -262,7 +261,7 @@
       $.each(repoPaths, function(index, repoPath) {
         addRepoPath(repoPath);
       });
-      updateSelectBoxes();
+      updateSelectBoxes(getRepoPaths());
 
       $('#approved-prs tbody').html('');
       parseRepos(repoPaths);
