@@ -2,6 +2,34 @@
   var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
+  var LS = function(namespace) {
+    this.keyOf = function(name) {
+      return name + ':' + namespace;
+    }
+  }
+
+  LS.prototype.getAccessToken = function() {
+    return window.localStorage[this.keyOf('github_access_token')];
+  }
+
+  LS.prototype.setAccessToken = function(accessToken) {
+    return window.localStorage[this.keyOf('github_access_token')] = accessToken;
+  }
+
+  LS.prototype.getRepoPaths = function() {
+    var repos = window.localStorage[this.keyOf('repos')];
+
+    return repos ? JSON.parse(repos) : [];
+  }
+
+  LS.prototype.addRepoPath = function(repoPath) {
+    var repoPaths = this.getRepoPaths();
+    if (repoPaths.indexOf(repoPath) === -1) {
+      repoPaths.push(repoPath);
+      localStorage[this.keyOf('repos')] = JSON.stringify(repoPaths);
+    }
+  }
+
   function updateSelectBoxes(repoPaths) {
     $('#repoPathSelect').html('<option></option>');
     if (repoPaths) {
@@ -26,22 +54,6 @@
       $.each(repoPaths, function(index, repoPath) {
         parsePullRequests(repoPath);
       });
-    }
-  }
-
-  function getRepoPaths() {
-    if (localStorage['repos:' + apiUrl]) {
-      return JSON.parse(localStorage['repos:' + apiUrl]);
-    }
-
-    return [];
-  }
-
-  function addRepoPath(repoPath) {
-    var repoPaths = getRepoPaths();
-    if (repoPaths.indexOf(repoPath) == -1) {
-      repoPaths.push(repoPath);
-      localStorage['repos:' + apiUrl] = JSON.stringify(repoPaths);
     }
   }
 
@@ -212,14 +224,6 @@
     return '';
   }
 
-  function getAccessToken() {
-    return localStorage['github_access_token:' + apiUrl];
-  }
-
-  function setAccessToken(accessToken) {
-    localStorage['github_access_token:' + apiUrl] = accessToken;
-  }
-
   var PullRequestParser = function(options) {
     options = options || {};
 
@@ -231,21 +235,23 @@
       cache: false
     });
 
-    if (getAccessToken()) {
+    var ls = new LS(apiUrl);
+
+    if (ls.getAccessToken()) {
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + getAccessToken()}
+        headers: {Authorization: 'token ' + ls.getAccessToken()}
       });
       $('#pickRepo').show();
     } else {
       $('#getAccessToken').show();
     }
 
-    updateSelectBoxes(getRepoPaths());
+    updateSelectBoxes(ls.getRepoPaths());
 
     $('#saveAccessToken').click(function() {
-      setAccessToken($('#accessToken').val());
+      ls.setAccessToken($('#accessToken').val());
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + getAccessToken()}
+        headers: {Authorization: 'token ' + ls.getAccessToken()}
       });
       $('#getAccessToken').hide();
       $('#pickRepo').show();
@@ -255,9 +261,9 @@
       var repoPaths = $('#repoPath').val().split('\n');
 
       $.each(repoPaths, function(index, repoPath) {
-        addRepoPath(repoPath);
+        ls.addRepoPath(repoPath);
       });
-      updateSelectBoxes(getRepoPaths());
+      updateSelectBoxes(ls.getRepoPaths());
 
       $('#approved-prs tbody').html('');
       parseRepos(repoPaths);
@@ -265,7 +271,7 @@
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseRepos(getRepoPaths());
+      parseRepos(ls.getRepoPaths());
     });
 
     $('#repoPathSelect').change(function(){
