@@ -2,6 +2,26 @@
   var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
+  var GhApi = function(apiUrl) {
+    this.apiUrl = apiUrl;
+  };
+
+  GhApi.prototype.getUser = function() {
+    return $.ajax(this.apiUrl + '/user');
+  };
+
+  GhApi.prototype.getRepoCommits = function(repoPath) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
+  }
+
+  GhApi.prototype.getRepoPulls = function(repoPath) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls');
+  }
+
+  GhApi.prototype.getRepoPull = function(repoPath, prNum) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum);
+  }
+
   var LS = function(namespace) {
     this.keyOf = function(name) {
       return name + ':' + namespace;
@@ -41,18 +61,18 @@
     }
   }
 
-  function parsePullRequests(repoPath) {
+  function parsePullRequests(ghApi, repoPath) {
     $.when(
-        $.ajax(apiUrl + '/user'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls')
+        ghApi.getUser(),
+        ghApi.getRepoCommits(repoPath),
+        ghApi.getRepoPulls(repoPath)
     ).done(parseAllPullRequests);
   }
 
-  function parseRepos(repoPaths) {
+  function parseRepos(ghApi, repoPaths) {
     if (repoPaths.indexOf(repoPath) == -1) {
       $.each(repoPaths, function(index, repoPath) {
-        parsePullRequests(repoPath);
+        parsePullRequests(ghApi, repoPath);
       });
     }
   }
@@ -65,11 +85,11 @@
     }
   }
 
-  function refreshPr(repoPath, prNum) {
+  function refreshPr(ghApi, repoPath, prNum) {
     $.when(
-        $.ajax(apiUrl + '/user'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls/' + prNum)
+        ghApi.getUser(),
+        ghApi.getRepoCommits(repoPath),
+        ghApi.getRepoPull(repoPath, prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
       parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
@@ -236,6 +256,7 @@
     });
 
     var ls = new LS(apiUrl);
+    var ghApi = new GhApi(apiUrl);
 
     if (ls.getAccessToken()) {
       $.ajaxSetup({
@@ -266,12 +287,12 @@
       updateSelectBoxes(ls.getRepoPaths());
 
       $('#approved-prs tbody').html('');
-      parseRepos(repoPaths);
+      parseRepos(ghApi, repoPaths);
     });
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseRepos(ls.getRepoPaths());
+      parseRepos(ghApi, ls.getRepoPaths());
     });
 
     $('#repoPathSelect').change(function(){
@@ -283,7 +304,7 @@
       var repoPath = row.data('repoPath');
       var prNum = row.data('prNum');
       $(this).parent().parent().remove();
-      refreshPr(repoPath, prNum);
+      refreshPr(ghApi, repoPath, prNum);
     });
   };
 
