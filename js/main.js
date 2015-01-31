@@ -53,11 +53,7 @@
     }
   }
 
-  function refreshPr() {
-    var row = $(this).parents('tr');
-    var repoPath = row.data('repoPath');
-    var prNum = row.data('prNum');
-    $(this).parent().parent().remove();
+  function refreshPr(repoPath, prNum) {
     $.when(
         $.ajax(apiUrl + '/user'),
         $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
@@ -276,7 +272,13 @@
       $('#repoPath').val($(this).val());
     });
 
-    $('#approved-prs').on('click', '.refresh', refreshPr);
+    $('#approved-prs').on('click', '.refresh', function() {
+      var row = $(this).parents('tr');
+      var repoPath = row.data('repoPath');
+      var prNum = row.data('prNum');
+      $(this).parent().parent().remove();
+      refreshPr(repoPath, prNum);
+    });
   };
 
   window.PullRequestParser = PullRequestParser;
