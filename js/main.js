@@ -1,10 +1,56 @@
 (function(window, $) {
-  var apiUrl = 'https://api.github.com';
   var MIN_APPROVALS = 2;
 
-  function updateSelectBoxes() {
+  var GhApi = function(apiUrl) {
+    this.apiUrl = apiUrl;
+  };
+
+  GhApi.prototype.getUser = function() {
+    return $.ajax(this.apiUrl + '/user');
+  };
+
+  GhApi.prototype.getRepoCommits = function(repoPath) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
+  }
+
+  GhApi.prototype.getRepoPulls = function(repoPath) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls');
+  }
+
+  GhApi.prototype.getRepoPull = function(repoPath, prNum) {
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum);
+  }
+
+  var LS = function(namespace) {
+    this.keyOf = function(name) {
+      return name + ':' + namespace;
+    }
+  }
+
+  LS.prototype.getAccessToken = function() {
+    return window.localStorage[this.keyOf('github_access_token')];
+  }
+
+  LS.prototype.setAccessToken = function(accessToken) {
+    return window.localStorage[this.keyOf('github_access_token')] = accessToken;
+  }
+
+  LS.prototype.getRepoPaths = function() {
+    var repos = window.localStorage[this.keyOf('repos')];
+
+    return repos ? JSON.parse(repos) : [];
+  }
+
+  LS.prototype.addRepoPath = function(repoPath) {
+    var repoPaths = this.getRepoPaths();
+    if (repoPaths.indexOf(repoPath) === -1) {
+      repoPaths.push(repoPath);
+      localStorage[this.keyOf('repos')] = JSON.stringify(repoPaths);
+    }
+  }
+
+  function updateSelectBoxes(repoPaths) {
     $('#repoPathSelect').html('<option></option>');
-    var repoPaths = getRepoPaths();
     if (repoPaths) {
       for (var i in repoPaths) {
           $('#repoPathSelect').append('<option>' + repoPaths[i] + '</option>');
@@ -14,35 +60,19 @@
     }
   }
 
-  function parsePullRequests(repoPath) {
+  function parsePullRequests(ghApi, repoPath) {
     $.when(
-        $.ajax(apiUrl + '/user'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls')
+        ghApi.getUser(),
+        ghApi.getRepoCommits(repoPath),
+        ghApi.getRepoPulls(repoPath)
     ).done(parseAllPullRequests);
   }
 
-  function parseRepos(repoPaths) {
+  function parseRepos(ghApi, repoPaths) {
     if (repoPaths.indexOf(repoPath) == -1) {
       $.each(repoPaths, function(index, repoPath) {
-        parsePullRequests(repoPath);
+        parsePullRequests(ghApi, repoPath);
       });
-    }
-  }
-
-  function getRepoPaths() {
-    if (localStorage['repos:' + apiUrl]) {
-      return JSON.parse(localStorage['repos:' + apiUrl]);
-    }
-
-    return [];
-  }
-
-  function addRepoPath(repoPath) {
-    var repoPaths = getRepoPaths();
-    if (repoPaths.indexOf(repoPath) == -1) {
-      repoPaths.push(repoPath);
-      localStorage['repos:' + apiUrl] = JSON.stringify(repoPaths);
     }
   }
 
@@ -54,15 +84,11 @@
     }
   }
 
-  function refreshPr() {
-    var row = $(this).parents('tr');
-    var repoPath = row.data('repoPath');
-    var prNum = row.data('prNum');
-    $(this).parent().parent().remove();
+  function refreshPr(ghApi, repoPath, prNum) {
     $.when(
-        $.ajax(apiUrl + '/user'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/commits/master'),
-        $.ajax(apiUrl + '/repos/' + repoPath + '/pulls/' + prNum)
+        ghApi.getUser(),
+        ghApi.getRepoCommits(repoPath),
+        ghApi.getRepoPull(repoPath, prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
       parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
@@ -217,18 +243,10 @@
     return '';
   }
 
-  function getAccessToken() {
-    return localStorage['github_access_token:' + apiUrl];
-  }
-
-  function setAccessToken(accessToken) {
-    localStorage['github_access_token:' + apiUrl] = accessToken;
-  }
-
-  window.PullRequestParser = function(options) {
+  var PullRequestParser = function(options) {
     options = options || {};
 
-    apiUrl = options.apiUrl || apiUrl;
+    var apiUrl = options.apiUrl || 'https://api.github.com';
     MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
 
     $.ajaxSetup({
@@ -236,21 +254,24 @@
       cache: false
     });
 
-    if (getAccessToken()) {
+    var ls = new LS(apiUrl);
+    var ghApi = new GhApi(apiUrl);
+
+    if (ls.getAccessToken()) {
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + getAccessToken()}
+        headers: {Authorization: 'token ' + ls.getAccessToken()}
       });
       $('#pickRepo').show();
     } else {
       $('#getAccessToken').show();
     }
 
-    updateSelectBoxes();
+    updateSelectBoxes(ls.getRepoPaths());
 
     $('#saveAccessToken').click(function() {
-      setAccessToken($('#accessToken').val());
+      ls.setAccessToken($('#accessToken').val());
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + getAccessToken()}
+        headers: {Authorization: 'token ' + ls.getAccessToken()}
       });
       $('#getAccessToken').hide();
       $('#pickRepo').show();
@@ -260,23 +281,31 @@
       var repoPaths = $('#repoPath').val().split('\n');
 
       $.each(repoPaths, function(index, repoPath) {
-        addRepoPath(repoPath);
+        ls.addRepoPath(repoPath);
       });
-      updateSelectBoxes();
+      updateSelectBoxes(ls.getRepoPaths());
 
       $('#approved-prs tbody').html('');
-      parseRepos(repoPaths);
+      parseRepos(ghApi, repoPaths);
     });
 
     $('#checkAllRepos').click(function() {
       $('#approved-prs tbody').html('');
-      parseRepos(getRepoPaths());
+      parseRepos(ghApi, ls.getRepoPaths());
     });
 
     $('#repoPathSelect').change(function(){
       $('#repoPath').val($(this).val());
     });
 
-    $('#approved-prs').on('click', '.refresh', refreshPr);
+    $('#approved-prs').on('click', '.refresh', function() {
+      var row = $(this).parents('tr');
+      var repoPath = row.data('repoPath');
+      var prNum = row.data('prNum');
+      $(this).parent().parent().remove();
+      refreshPr(ghApi, repoPath, prNum);
+    });
   };
+
+  window.PullRequestParser = PullRequestParser;
 }(window, jQuery))
