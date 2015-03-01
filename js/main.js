@@ -22,19 +22,10 @@
   }
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
-    // This is a crude way of detecting that we are on an old version of the API where the urls are broken and need to be built manually.
-    if (pullRequest.statuses_url) {
-      return $.when(
-        $.ajax(pullRequest.comments_url),
-        $.ajax(pullRequest.commits_url),
-        $.ajax(pullRequest.statuses_url)
-      );
-    }
-
     return $.when(
       $.ajax(pullRequest.comments_url),
-      $.ajax(pullRequest.url + '/commits'),
-      $.ajax(pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
+      $.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')),
+      $.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
     );
   };
 
