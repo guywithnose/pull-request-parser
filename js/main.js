@@ -21,6 +21,23 @@
     return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum);
   }
 
+  GhApi.prototype.getPullDetails = function(pullRequest) {
+    // This is a crude way of detecting that we are on an old version of the API where the urls are broken and need to be built manually.
+    if (pullRequest.statuses_url) {
+      return $.when(
+        $.ajax(pullRequest.comments_url),
+        $.ajax(pullRequest.commits_url),
+        $.ajax(pullRequest.statuses_url)
+      );
+    }
+
+    return $.when(
+      $.ajax(pullRequest.comments_url),
+      $.ajax(pullRequest.url + '/commits'),
+      $.ajax(pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
+    );
+  };
+
   var LS = function(namespace) {
     this.keyOf = function(name) {
       return name + ':' + namespace;
@@ -65,7 +82,9 @@
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
         ghApi.getRepoPulls(repoPath)
-    ).done(parseAllPullRequests);
+    ).done(function(user, commits, pulls) {
+      parseAllPullRequests(ghApi, user, commits, pulls);
+    });
   }
 
   function parseRepos(ghApi, repoPaths) {
@@ -76,11 +95,11 @@
     }
   }
 
-  function parseAllPullRequests(userXhr, masterXhr, pullRequestDataXhr) {
+  function parseAllPullRequests(ghApi, userXhr, masterXhr, pullRequestDataXhr) {
     var username = userXhr[0].login;
     var headCommit = masterXhr[0].sha;
     for (var i in pullRequestDataXhr[0]) {
-      parsePullRequest(username, headCommit, pullRequestDataXhr[0][i]);
+      parsePullRequest(ghApi, username, headCommit, pullRequestDataXhr[0][i]);
     }
   }
 
@@ -90,12 +109,12 @@
         ghApi.getRepoCommits(repoPath),
         ghApi.getRepoPull(repoPath, prNum)
     ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
-      parsePullRequest(userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
+      parsePullRequest(ghApi, userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
     });
   }
 
-  function parsePullRequest(username, headCommit, pullRequest) {
-    saturatePullRequest(pullRequest).then(function(pullRequest) {
+  function parsePullRequest(ghApi, username, headCommit, pullRequest) {
+    saturatePullRequest(ghApi, pullRequest).then(function(pullRequest) {
       pullRequest.iAmOwner = pullRequest.user.login == username;
       pullRequest.approvals = approvingComments(pullRequest.comments);
       pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
@@ -129,23 +148,8 @@
       }
   }
 
-  function saturatePullRequest(pullRequest) {
-    // This is a crude way of detecting that we are on an old version of the API where the urls are broken and need to be built manually.
-    if (pullRequest.statuses_url) {
-      return $.when(
-        $.ajax(pullRequest.comments_url),
-        $.ajax(pullRequest.commits_url),
-        $.ajax(pullRequest.statuses_url)
-      ).then(function(comments, commits, statuses) {
-        return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
-      });
-    }
-
-    return $.when(
-      $.ajax(pullRequest.comments_url),
-      $.ajax(pullRequest.url + '/commits'),
-      $.ajax(pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
-    ).then(function(comments, commits, statuses) {
+  function saturatePullRequest(ghApi, pullRequest) {
+    return ghApi.getPullDetails(pullRequest).then(function(comments, commits, statuses) {
       return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
     });
   };
