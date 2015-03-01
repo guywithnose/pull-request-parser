@@ -1,31 +1,35 @@
 (function(window, $) {
   var MIN_APPROVALS = 2;
 
+  function takeFirstParam(val) {
+    return val;
+  }
+
   var GhApi = function(apiUrl) {
     this.apiUrl = apiUrl;
   };
 
   GhApi.prototype.getUser = function() {
-    return $.ajax(this.apiUrl + '/user');
+    return $.ajax(this.apiUrl + '/user').then(takeFirstParam);
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master').then(takeFirstParam);
   }
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls');
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls').then(takeFirstParam);
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum);
+    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum).then(takeFirstParam);
   }
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return $.when(
-      $.ajax(pullRequest.comments_url),
-      $.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')),
-      $.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
+      $.ajax(pullRequest.comments_url).then(takeFirstParam),
+      $.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')).then(takeFirstParam),
+      $.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)).then(takeFirstParam)
     );
   };
 
@@ -86,11 +90,11 @@
     }
   }
 
-  function parseAllPullRequests(ghApi, userXhr, masterXhr, pullRequestDataXhr) {
-    var username = userXhr[0].login;
-    var headCommit = masterXhr[0].sha;
-    for (var i in pullRequestDataXhr[0]) {
-      parsePullRequest(ghApi, username, headCommit, pullRequestDataXhr[0][i]);
+  function parseAllPullRequests(ghApi, user, commit, pulls) {
+    var username = user.login;
+    var headCommit = commit.sha;
+    for (var i in pulls) {
+      parsePullRequest(ghApi, username, headCommit, pulls[i]);
     }
   }
 
@@ -99,8 +103,8 @@
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
         ghApi.getRepoPull(repoPath, prNum)
-    ).done(function(userXhr, masterXhr, pullRequestDataXhr) {
-      parsePullRequest(ghApi, userXhr[0].login, masterXhr[0].sha, pullRequestDataXhr[0]);
+    ).done(function(user, commit, pull) {
+      parsePullRequest(ghApi, user.login, commit.sha, pull);
     });
   }
 
@@ -141,7 +145,7 @@
 
   function saturatePullRequest(ghApi, pullRequest) {
     return ghApi.getPullDetails(pullRequest).then(function(comments, commits, statuses) {
-      return $.extend(pullRequest, {comments: comments[0], commits: commits[0], statuses: statuses[0]});
+      return $.extend(pullRequest, {comments: comments, commits: commits, statuses: statuses});
     });
   };
 
