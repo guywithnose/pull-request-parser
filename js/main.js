@@ -1,36 +1,32 @@
-(function(window, $) {
+(function(window, $, Promise) {
   var MIN_APPROVALS = 2;
-
-  function takeFirstParam(val) {
-    return val;
-  }
 
   var GhApi = function(apiUrl) {
     this.apiUrl = apiUrl;
   };
 
   GhApi.prototype.getUser = function() {
-    return $.ajax(this.apiUrl + '/user').then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/user'));
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master').then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master'));
   }
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls').then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls'));
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum).then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum));
   }
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
-    return $.when(
-      $.ajax(pullRequest.comments_url).then(takeFirstParam),
-      $.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')).then(takeFirstParam),
-      $.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)).then(takeFirstParam)
-    );
+    return Promise.props({
+      comments: Promise.resolve($.ajax(pullRequest.comments_url)),
+      commits: Promise.resolve($.ajax(pullRequest.commits_url || (pullRequest.url + '/commits'))),
+      statuses: Promise.resolve($.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)))
+    });
   };
 
   var LS = function(namespace) {
@@ -73,13 +69,14 @@
   }
 
   function parsePullRequests(ghApi, repoPath) {
-    $.when(
+    Promise.join(
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
-        ghApi.getRepoPulls(repoPath)
-    ).done(function(user, commits, pulls) {
-      parseAllPullRequests(ghApi, user, commits, pulls);
-    });
+        ghApi.getRepoPulls(repoPath),
+        function(user, commits, pulls) {
+          parseAllPullRequests(ghApi, user, commits, pulls);
+        }
+    );
   }
 
   function parseRepos(ghApi, repoPaths) {
@@ -99,13 +96,14 @@
   }
 
   function refreshPr(ghApi, repoPath, prNum) {
-    $.when(
+    Promise.join(
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
-        ghApi.getRepoPull(repoPath, prNum)
-    ).done(function(user, commit, pull) {
-      parsePullRequest(ghApi, user.login, commit.sha, pull);
-    });
+        ghApi.getRepoPull(repoPath, prNum),
+        function(user, commit, pull) {
+          parsePullRequest(ghApi, user.login, commit.sha, pull);
+        }
+    );
   }
 
   function parsePullRequest(ghApi, username, headCommit, pullRequest) {
@@ -144,8 +142,8 @@
   }
 
   function saturatePullRequest(ghApi, pullRequest) {
-    return ghApi.getPullDetails(pullRequest).then(function(comments, commits, statuses) {
-      return $.extend(pullRequest, {comments: comments, commits: commits, statuses: statuses});
+    return ghApi.getPullDetails(pullRequest).then(function(result) {
+      return $.extend(pullRequest, result);
     });
   };
 
@@ -307,4 +305,4 @@
   };
 
   window.PullRequestParser = PullRequestParser;
-}(window, jQuery))
+}(window, jQuery, Promise))
