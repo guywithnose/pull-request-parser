@@ -14,11 +14,26 @@
   }
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls'));
+    var self = this;
+
+    return Promise.map(
+      Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls')),
+      function(pull) {
+        return self.getPullDetails(pull).then(function(details) {
+          return $.extend(pull, details);
+        });
+      }
+    );
+
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum));
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum))
+      .then(function(pull) {
+        return self.getPullDetails(pull).then(function(details) {
+          return $.extend(pull, details);
+        });
+      });
   }
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
@@ -74,7 +89,7 @@
         ghApi.getRepoCommits(repoPath),
         ghApi.getRepoPulls(repoPath),
         function(user, commits, pulls) {
-          parseAllPullRequests(ghApi, user, commits, pulls);
+          parseAllPullRequests(user, commits, pulls);
         }
     );
   }
@@ -87,11 +102,11 @@
     }
   }
 
-  function parseAllPullRequests(ghApi, user, commit, pulls) {
+  function parseAllPullRequests(user, commit, pulls) {
     var username = user.login;
     var headCommit = commit.sha;
     for (var i in pulls) {
-      parsePullRequest(ghApi, username, headCommit, pulls[i]);
+      parsePullRequest(username, headCommit, pulls[i]);
     }
   }
 
@@ -101,35 +116,25 @@
         ghApi.getRepoCommits(repoPath),
         ghApi.getRepoPull(repoPath, prNum),
         function(user, commit, pull) {
-          parsePullRequest(ghApi, user.login, commit.sha, pull);
+          parsePullRequest(user.login, commit.sha, pull);
         }
     );
   }
 
-  function parsePullRequest(ghApi, username, headCommit, pullRequest) {
-    saturatePullRequest(ghApi, pullRequest).then(function(pullRequest) {
-      pullRequest.iAmOwner = pullRequest.user.login == username;
-      pullRequest.approvals = approvingComments(pullRequest.comments);
-      pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
-      pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
-      pullRequest.iHaveApproved = !!pullRequest.approvals[username];
-      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
-      pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
-      var state = getState(pullRequest.statuses);
-      pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
-      pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
+  function parsePullRequest(username, headCommit, pullRequest) {
+    pullRequest.iAmOwner = pullRequest.user.login == username;
+    pullRequest.approvals = approvingComments(pullRequest.comments);
+    pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
+    pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
+    pullRequest.iHaveApproved = !!pullRequest.approvals[username];
+    pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
+    pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
+    var state = getState(pullRequest.statuses);
+    pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
+    pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
-      buildHtml(pullRequest);
-    }, function(pullRequest) {
-      pullRequest.numApprovals = '?';
-      pullRequest.iHaveApproved = false;
-      pullRequest.isRebased = false;
-      pullRequest.rebasedText = '?';
-      pullRequest.state = '?';
-      pullRequest.needsMyApproval = '?';
-      buildHtml(pullRequest);
-    });
-  }
+    buildHtml(pullRequest);
+  };
 
   function buildHtml(pullRequest) {
       var html = buildRow(pullRequest);
@@ -140,12 +145,6 @@
         $('#approved-prs tbody').append(html);
       }
   }
-
-  function saturatePullRequest(ghApi, pullRequest) {
-    return ghApi.getPullDetails(pullRequest).then(function(result) {
-      return $.extend(pullRequest, result);
-    });
-  };
 
   function getState(statuses) {
     if (statuses.length == 0) {
