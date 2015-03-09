@@ -28,6 +28,8 @@
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
+    var self = this;
+
     return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum))
       .then(function(pull) {
         return self.getPullDetails(pull).then(function(details) {
