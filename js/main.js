@@ -1,36 +1,47 @@
-(function(window, $) {
+(function(window, $, Promise) {
   var MIN_APPROVALS = 2;
-
-  function takeFirstParam(val) {
-    return val;
-  }
 
   var GhApi = function(apiUrl) {
     this.apiUrl = apiUrl;
   };
 
   GhApi.prototype.getUser = function() {
-    return $.ajax(this.apiUrl + '/user').then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/user'));
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master').then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master'));
   }
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls').then(takeFirstParam);
+    var self = this;
+
+    return Promise.map(
+      Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls')),
+      function(pull) {
+        return self.getPullDetails(pull).then(function(details) {
+          return $.extend(pull, details);
+        });
+      }
+    );
+
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
-    return $.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum).then(takeFirstParam);
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum))
+      .then(function(pull) {
+        return self.getPullDetails(pull).then(function(details) {
+          return $.extend(pull, details);
+        });
+      });
   }
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
-    return $.when(
-      $.ajax(pullRequest.comments_url).then(takeFirstParam),
-      $.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')).then(takeFirstParam),
-      $.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)).then(takeFirstParam)
-    );
+    return Promise.props({
+      comments: Promise.resolve($.ajax(pullRequest.comments_url)),
+      commits: Promise.resolve($.ajax(pullRequest.commits_url || (pullRequest.url + '/commits'))),
+      statuses: Promise.resolve($.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)))
+    });
   };
 
   var LS = function(namespace) {
@@ -73,13 +84,14 @@
   }
 
   function parsePullRequests(ghApi, repoPath) {
-    $.when(
+    Promise.join(
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
-        ghApi.getRepoPulls(repoPath)
-    ).done(function(user, commits, pulls) {
-      parseAllPullRequests(ghApi, user, commits, pulls);
-    });
+        ghApi.getRepoPulls(repoPath),
+        function(user, commits, pulls) {
+          parseAllPullRequests(user, commits, pulls);
+        }
+    );
   }
 
   function parseRepos(ghApi, repoPaths) {
@@ -90,48 +102,39 @@
     }
   }
 
-  function parseAllPullRequests(ghApi, user, commit, pulls) {
+  function parseAllPullRequests(user, commit, pulls) {
     var username = user.login;
     var headCommit = commit.sha;
     for (var i in pulls) {
-      parsePullRequest(ghApi, username, headCommit, pulls[i]);
+      parsePullRequest(username, headCommit, pulls[i]);
     }
   }
 
   function refreshPr(ghApi, repoPath, prNum) {
-    $.when(
+    Promise.join(
         ghApi.getUser(),
         ghApi.getRepoCommits(repoPath),
-        ghApi.getRepoPull(repoPath, prNum)
-    ).done(function(user, commit, pull) {
-      parsePullRequest(ghApi, user.login, commit.sha, pull);
-    });
+        ghApi.getRepoPull(repoPath, prNum),
+        function(user, commit, pull) {
+          parsePullRequest(user.login, commit.sha, pull);
+        }
+    );
   }
 
-  function parsePullRequest(ghApi, username, headCommit, pullRequest) {
-    saturatePullRequest(ghApi, pullRequest).then(function(pullRequest) {
-      pullRequest.iAmOwner = pullRequest.user.login == username;
-      pullRequest.approvals = approvingComments(pullRequest.comments);
-      pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
-      pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
-      pullRequest.iHaveApproved = !!pullRequest.approvals[username];
-      pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
-      pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
-      var state = getState(pullRequest.statuses);
-      pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
-      pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
+  function parsePullRequest(username, headCommit, pullRequest) {
+    pullRequest.iAmOwner = pullRequest.user.login == username;
+    pullRequest.approvals = approvingComments(pullRequest.comments);
+    pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
+    pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
+    pullRequest.iHaveApproved = !!pullRequest.approvals[username];
+    pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
+    pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
+    var state = getState(pullRequest.statuses);
+    pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
+    pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
-      buildHtml(pullRequest);
-    }, function(pullRequest) {
-      pullRequest.numApprovals = '?';
-      pullRequest.iHaveApproved = false;
-      pullRequest.isRebased = false;
-      pullRequest.rebasedText = '?';
-      pullRequest.state = '?';
-      pullRequest.needsMyApproval = '?';
-      buildHtml(pullRequest);
-    });
-  }
+    buildHtml(pullRequest);
+  };
 
   function buildHtml(pullRequest) {
       var html = buildRow(pullRequest);
@@ -142,12 +145,6 @@
         $('#approved-prs tbody').append(html);
       }
   }
-
-  function saturatePullRequest(ghApi, pullRequest) {
-    return ghApi.getPullDetails(pullRequest).then(function(comments, commits, statuses) {
-      return $.extend(pullRequest, {comments: comments, commits: commits, statuses: statuses});
-    });
-  };
 
   function getState(statuses) {
     if (statuses.length == 0) {
@@ -307,4 +304,4 @@
   };
 
   window.PullRequestParser = PullRequestParser;
-}(window, jQuery))
+}(window, jQuery, Promise))
