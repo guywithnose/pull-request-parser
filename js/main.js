@@ -96,11 +96,9 @@
   }
 
   function parseRepos(ghApi, repoPaths) {
-    if (repoPaths.indexOf(repoPath) == -1) {
-      $.each(repoPaths, function(index, repoPath) {
-        parsePullRequests(ghApi, repoPath);
-      });
-    }
+    $.each(repoPaths, function(index, repoPath) {
+      parsePullRequests(ghApi, repoPath);
+    });
   }
 
   function parseAllPullRequests(user, commit, pulls) {
