@@ -24,7 +24,6 @@
         });
       }
     );
-
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
