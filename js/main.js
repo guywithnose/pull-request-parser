@@ -63,6 +63,10 @@
     return window.localStorage[this.keyOf('github_access_token')] = accessToken;
   }
 
+  LS.prototype.unsetAccessToken = function() {
+    delete window.localStorage[this.keyOf('github_access_token')];
+  }
+
   LS.prototype.getRepoPaths = function() {
     var repos = window.localStorage[this.keyOf('repos')];
 
@@ -266,7 +270,12 @@
       $.ajaxSetup({
         headers: {Authorization: 'token ' + ls.getAccessToken()}
       });
-      $('#pickRepo').show();
+      ghApi.getUser().then(function() {
+        $('#pickRepo').show();
+      }).catch(function() {
+        ls.unsetAccessToken();
+        $('#getAccessToken').show();
+      });
     } else {
       $('#getAccessToken').show();
     }
