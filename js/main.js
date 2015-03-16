@@ -274,12 +274,16 @@
     updateSelectBoxes(ls.getRepoPaths());
 
     $('#saveAccessToken').click(function() {
-      ls.setAccessToken($('#accessToken').val());
       $.ajaxSetup({
-        headers: {Authorization: 'token ' + ls.getAccessToken()}
+        headers: {Authorization: 'token ' + $('#accessToken').val()}
       });
-      $('#getAccessToken').hide();
-      $('#pickRepo').show();
+      ghApi.getUser().then(function() {
+        ls.setAccessToken($('#accessToken').val());
+        $('#getAccessToken').hide();
+        $('#pickRepo').show();
+      }).catch(function() {
+        alert('It appears that access token is invalid');
+      });
     });
 
     $('#parsePullRequests').click(function() {
