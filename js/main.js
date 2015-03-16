@@ -13,6 +13,10 @@
     return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master'));
   }
 
+  GhApi.prototype.getOrganizationRepos = function(organization) {
+    return Promise.resolve($.ajax(this.apiUrl + '/orgs/' + organization + '/repos'));
+  };
+
   GhApi.prototype.getRepoPulls = function(repoPath) {
     var self = this;
 
@@ -24,7 +28,6 @@
         });
       }
     );
-
   }
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
@@ -96,12 +99,16 @@
     );
   }
 
-  function parseRepos(ghApi, repoPaths) {
-    if (repoPaths.indexOf(repoPath) == -1) {
-      $.each(repoPaths, function(index, repoPath) {
-        parsePullRequests(ghApi, repoPath);
-      });
-    }
+  function parseRepos(ghApi, specs) {
+    $.each(specs, function(index, spec) {
+      if (spec.indexOf('/') === -1) {
+        ghApi.getOrganizationRepos(spec).each(function(repo) {
+          parsePullRequests(ghApi, repo.full_name);
+        });
+      } else {
+        parsePullRequests(ghApi, spec);
+      }
+    });
   }
 
   function parseAllPullRequests(user, commit, pulls) {
