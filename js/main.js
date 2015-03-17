@@ -3,30 +3,34 @@
 
   var GhApi = function(apiUrl, token) {
     this.apiUrl = apiUrl;
-    this.ajaxOptions = {
+    var ajaxOptions = {
       dataType: "json",
       cache: false,
       headers: {Authorization: 'token ' + token}
     };
+
+    this.ajax = function(url) {
+      return Promise.resolve($.ajax(url, ajaxOptions));
+    };
   };
 
   GhApi.prototype.getUser = function() {
-    return Promise.resolve($.ajax(this.apiUrl + '/user', this.ajaxOptions));
+    return this.ajax(this.apiUrl + '/user');
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master', this.ajaxOptions));
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
   }
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
-    return Promise.resolve($.ajax(this.apiUrl + '/orgs/' + organization + '/repos', this.ajaxOptions));
+    return this.ajax(this.apiUrl + '/orgs/' + organization + '/repos');
   };
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
     var self = this;
 
     return Promise.map(
-      Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls', this.ajaxOptions)),
+      this.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls'),
       function(pull) {
         return self.getPullDetails(pull).then(function(details) {
           return $.extend(pull, details);
@@ -38,7 +42,7 @@
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
     var self = this;
 
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum, this.ajaxOptions))
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum)
       .then(function(pull) {
         return self.getPullDetails(pull).then(function(details) {
           return $.extend(pull, details);
@@ -48,9 +52,9 @@
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return Promise.props({
-      comments: Promise.resolve($.ajax(pullRequest.comments_url, this.ajaxOptions)),
-      commits: Promise.resolve($.ajax(pullRequest.commits_url || (pullRequest.url + '/commits', this.ajaxOptions), this.ajaxOptions)),
-      statuses: Promise.resolve($.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha), this.ajaxOptions))
+      comments: this.ajax(pullRequest.comments_url),
+      commits: this.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')),
+      statuses: this.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
     });
   };
 
