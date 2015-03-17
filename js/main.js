@@ -1,27 +1,32 @@
 (function(window, $, Promise) {
   var MIN_APPROVALS = 2;
 
-  var GhApi = function(apiUrl) {
+  var GhApi = function(apiUrl, token) {
     this.apiUrl = apiUrl;
+    this.ajaxOptions = {
+      dataType: "json",
+      cache: false,
+      headers: {Authorization: 'token ' + token}
+    };
   };
 
   GhApi.prototype.getUser = function() {
-    return Promise.resolve($.ajax(this.apiUrl + '/user'));
+    return Promise.resolve($.ajax(this.apiUrl + '/user', this.ajaxOptions));
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master'));
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master', this.ajaxOptions));
   }
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
-    return Promise.resolve($.ajax(this.apiUrl + '/orgs/' + organization + '/repos'));
+    return Promise.resolve($.ajax(this.apiUrl + '/orgs/' + organization + '/repos', this.ajaxOptions));
   };
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
     var self = this;
 
     return Promise.map(
-      Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls')),
+      Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls', this.ajaxOptions)),
       function(pull) {
         return self.getPullDetails(pull).then(function(details) {
           return $.extend(pull, details);
@@ -33,7 +38,7 @@
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
     var self = this;
 
-    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum))
+    return Promise.resolve($.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum, this.ajaxOptions))
       .then(function(pull) {
         return self.getPullDetails(pull).then(function(details) {
           return $.extend(pull, details);
@@ -43,9 +48,9 @@
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return Promise.props({
-      comments: Promise.resolve($.ajax(pullRequest.comments_url)),
-      commits: Promise.resolve($.ajax(pullRequest.commits_url || (pullRequest.url + '/commits'))),
-      statuses: Promise.resolve($.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha)))
+      comments: Promise.resolve($.ajax(pullRequest.comments_url, this.ajaxOptions)),
+      commits: Promise.resolve($.ajax(pullRequest.commits_url || (pullRequest.url + '/commits', this.ajaxOptions), this.ajaxOptions)),
+      statuses: Promise.resolve($.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha), this.ajaxOptions))
     });
   };
 
@@ -258,18 +263,11 @@
     var apiUrl = options.apiUrl || 'https://api.github.com';
     MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
 
-    $.ajaxSetup({
-      dataType: "json",
-      cache: false
-    });
-
     var ls = new LS(apiUrl);
-    var ghApi = new GhApi(apiUrl);
+    var ghApi;
 
     if (ls.getAccessToken()) {
-      $.ajaxSetup({
-        headers: {Authorization: 'token ' + ls.getAccessToken()}
-      });
+      ghApi = new GhApi(apiUrl, ls.getAccessToken());
       ghApi.getUser().then(function() {
         $('#pickRepo').show();
       }).catch(function() {
@@ -283,9 +281,7 @@
     updateSelectBoxes(ls.getRepoPaths());
 
     $('#saveAccessToken').click(function() {
-      $.ajaxSetup({
-        headers: {Authorization: 'token ' + $('#accessToken').val()}
-      });
+      ghApi = new GhApi(apiUrl, $('#accessToken').val());
       ghApi.getUser().then(function() {
         ls.setAccessToken($('#accessToken').val());
         $('#getAccessToken').hide();
