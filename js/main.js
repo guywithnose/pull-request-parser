@@ -10,7 +10,19 @@
     };
 
     this.ajax = function(url) {
-      return Promise.resolve($.ajax(url, ajaxOptions));
+      return Promise.resolve(
+        $.ajax(url, ajaxOptions).then(function(data, status, xhr) {
+          var link = this.parseLinkHeader(xhr.getResponseHeader('Link'));
+
+          if (typeof link.next === 'undefined') {
+            return data;
+          }
+
+          return this.ajax(link.next).then(function(next) {
+            return data.concat(next);
+          });
+        }.bind(this))
+      );
     };
   };
 
@@ -57,6 +69,22 @@
       statuses: this.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
     });
   };
+
+  GhApi.prototype.parseLinkHeader = function(header) {
+    var result = {};
+    if (typeof header !== 'string') {
+      return result;
+    }
+
+    $.each(header.split(','), function(i, link) {
+      var sections = link.split(';');
+      var url = sections[0].replace(/<(.*)>/, '$1').trim();
+      var name = sections[1].replace(/rel="(.*)"/, '$1').trim();
+      result[name] = url;
+    });
+
+    return result;
+  } ;
 
   var LS = function(namespace) {
     this.keyOf = function(name) {
