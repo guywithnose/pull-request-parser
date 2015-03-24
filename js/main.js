@@ -46,6 +46,10 @@
     return this.ajax(this.apiUrl + '/orgs/' + organization + '/repos');
   };
 
+  GhApi.prototype.getUserRepos = function(organization) {
+    return this.ajax(this.apiUrl + '/users/' + organization + '/repos');
+  };
+
   GhApi.prototype.getRepoPulls = function(repoPath) {
     var self = this;
 
@@ -151,7 +155,9 @@
   function parseRepos(ghApi, specs) {
     $.each(specs, function(index, spec) {
       if (spec.indexOf('/') === -1) {
-        ghApi.getOrganizationRepos(spec).each(function(repo) {
+        ghApi.getOrganizationRepos(spec).catch(function() {
+          return ghApi.getUserRepos(spec);
+        }).each(function(repo) {
           parsePullRequests(ghApi, repo.full_name);
         });
       } else {
