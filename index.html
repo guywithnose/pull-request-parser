@@ -3,6 +3,7 @@
 <head>
   <title>Pull Request Parser</title>
   <link href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/united/bootstrap.min.css" rel="stylesheet">
+  <link href="//cdn.datatables.net/1.10.5/css/jquery.dataTables.min.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
 </head>
 <body>
@@ -29,7 +30,7 @@
         <button id="parsePullRequests">Parse Pull Requests</button>
       </div>
     </div>
-    <table class="table table-striped table-hover" id="approved-prs">
+    <table class="table table-striped table-hover table-bordered" id="approved-prs">
       <thead>
         <tr>
           <th>Repo</th>
@@ -48,6 +49,7 @@
   </div>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/2.9.13/bluebird.min.js"></script>
+  <script src="//cdn.datatables.net/1.10.5/js/jquery.dataTables.min.js"></script>
   <script src="js/main.js"></script>
   <script type="text/javascript">
     var urlMatches = location.href.match(/apiUrl=([^&]*)/);

@@ -1,10 +1,18 @@
 (function(window, $, Promise) {
   var MIN_APPROVALS = 2;
 
+  var dataTable = $('#approved-prs').DataTable({
+    paging: false,
+    info: false,
+    search: {
+      regex: true
+    }
+  });
+
   var GhApi = function(apiUrl, token) {
     this.apiUrl = apiUrl;
     var ajaxOptions = {
-      dataType: "json",
+      dataType: 'json',
       cache: false,
       headers: {Authorization: 'token ' + token}
     };
@@ -32,7 +40,7 @@
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
     return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
-  }
+  };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
     return this.ajax(this.apiUrl + '/orgs/' + organization + '/repos');
@@ -49,7 +57,7 @@
         });
       }
     );
-  }
+  };
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
     var self = this;
@@ -60,7 +68,7 @@
           return $.extend(pull, details);
         });
       });
-  }
+  };
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return Promise.props({
@@ -84,31 +92,31 @@
     });
 
     return result;
-  } ;
+  };
 
   var LS = function(namespace) {
     this.keyOf = function(name) {
       return name + ':' + namespace;
-    }
-  }
+    };
+  };
 
   LS.prototype.getAccessToken = function() {
     return window.localStorage[this.keyOf('github_access_token')];
-  }
+  };
 
   LS.prototype.setAccessToken = function(accessToken) {
     return window.localStorage[this.keyOf('github_access_token')] = accessToken;
-  }
+  };
 
   LS.prototype.unsetAccessToken = function() {
     delete window.localStorage[this.keyOf('github_access_token')];
-  }
+  };
 
   LS.prototype.getRepoPaths = function() {
     var repos = window.localStorage[this.keyOf('repos')];
 
     return repos ? JSON.parse(repos) : [];
-  }
+  };
 
   LS.prototype.addRepoPath = function(repoPath) {
     var repoPaths = this.getRepoPaths();
@@ -116,7 +124,7 @@
       repoPaths.push(repoPath);
       localStorage[this.keyOf('repos')] = JSON.stringify(repoPaths);
     }
-  }
+  };
 
   function updateSelectBoxes(repoPaths) {
     $('#repoPathSelect').html('<option></option>');
@@ -183,18 +191,18 @@
     pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
-    buildHtml(pullRequest);
+    dataTable.row.add([
+      '<a href="' + pullRequest.base.repo.html_url + '" target="_blank">' + pullRequest.base.repo.full_name + '</a>',
+      '<a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a>',
+      pullRequest.user.login,
+      pullRequest.head.ref,
+      '<div title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>',
+      pullRequest.rebasedText,
+      pullRequest.state,
+      pullRequest.needsMyApproval,
+      '<button class="refresh">Refresh</button>'
+    ]).draw().nodes().to$().addClass(rowClass(pullRequest)).data({prNum: pullRequest.number, repoPath: pullRequest.base.repo.full_name});
   };
-
-  function buildHtml(pullRequest) {
-      var html = buildRow(pullRequest);
-
-      if (pullRequest.approved) {
-        $('#approved-prs tbody').prepend(html);
-      } else {
-        $('#approved-prs tbody').append(html);
-      }
-  }
 
   function getState(statuses) {
     if (statuses.length == 0) {
@@ -244,20 +252,6 @@
     return false;
   }
 
-  function buildRow(pullRequest) {
-    var row = '<td>' + pullRequest.base.repo.full_name + '</td>' +
-      '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td>' +
-      '<td>' + pullRequest.user.login + '</td>' +
-      '<td>' + pullRequest.head.ref + '</td>' +
-      '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
-      '<td>' + pullRequest.rebasedText + '</td>' +
-      '<td>' + pullRequest.state + '</td>' +
-      '<td>' + pullRequest.needsMyApproval + '</td>' +
-      '<td><button class="refresh">Refresh</button></td>';
-
-    return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name + '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
-  }
-
   function approvalTitle(pullRequest) {
     var title = '';
     for (var commentor in pullRequest.approvals) {
@@ -273,11 +267,11 @@
     if (pullRequest.approved && pullRequest.isRebased) {
       return 'success';
     }
-    
+
     if (!pullRequest.iHaveApproved && !pullRequest.iAmOwner) {
       return 'info';
     }
-    
+
     if (pullRequest.iAmOwner && !pullRequest.isRebased) {
       return 'warning';
     }
@@ -348,10 +342,10 @@
       var row = $(this).parents('tr');
       var repoPath = row.data('repoPath');
       var prNum = row.data('prNum');
-      $(this).parent().parent().remove();
+      dataTable.row($(this).parents('tr')).remove().draw();
       refreshPr(ghApi, repoPath, prNum);
     });
   };
 
   window.PullRequestParser = PullRequestParser;
-}(window, jQuery, Promise))
+}(window, jQuery, Promise));
