@@ -1,6 +1,14 @@
 (function(window, $, Promise) {
   var MIN_APPROVALS = 2;
 
+  var dataTable = $('#approved-prs').DataTable({
+    paging: false,
+    info: false,
+    search: {
+      regex: true
+    }
+  });
+
   var GhApi = function(apiUrl, token) {
     this.apiUrl = apiUrl;
     var ajaxOptions = {
@@ -183,18 +191,18 @@
     pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
-    buildHtml(pullRequest);
+    dataTable.row.add([
+      '<a href="' + pullRequest.base.repo.html_url + '" target="_blank">' + pullRequest.base.repo.full_name + '</a>',
+      '<a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a>',
+      pullRequest.user.login,
+      pullRequest.head.ref,
+      '<div title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>',
+      pullRequest.rebasedText,
+      pullRequest.state,
+      pullRequest.needsMyApproval,
+      '<button class="refresh">Refresh</button>'
+    ]).draw().nodes().to$().addClass(rowClass(pullRequest)).data({prNum: pullRequest.number, repoPath: pullRequest.base.repo.full_name});
   };
-
-  function buildHtml(pullRequest) {
-      var html = buildRow(pullRequest);
-
-      if (pullRequest.approved) {
-        $('#approved-prs tbody').prepend(html);
-      } else {
-        $('#approved-prs tbody').append(html);
-      }
-  }
 
   function getState(statuses) {
     if (statuses.length == 0) {
@@ -243,21 +251,6 @@
 
     return false;
   }
-
-  function buildRow(pullRequest) {
-    var row = '<td>' + pullRequest.base.repo.full_name + '</td>' +
-      '<td><a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a></td>' +
-      '<td>' + pullRequest.user.login + '</td>' +
-      '<td>' + pullRequest.head.ref + '</td>' +
-      '<td title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>' +
-      '<td>' + pullRequest.rebasedText + '</td>' +
-      '<td>' + pullRequest.state + '</td>' +
-      '<td>' + pullRequest.needsMyApproval + '</td>' +
-      '<td><button class="refresh">Refresh</button></td>';
-
-    return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name +
-      '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
-  };
 
   function approvalTitle(pullRequest) {
     var title = '';
@@ -349,7 +342,7 @@
       var row = $(this).parents('tr');
       var repoPath = row.data('repoPath');
       var prNum = row.data('prNum');
-      $(this).parent().parent().remove();
+      dataTable.row($(this).parents('tr')).remove().draw();
       refreshPr(ghApi, repoPath, prNum);
     });
   };
