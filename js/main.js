@@ -4,7 +4,7 @@
   var GhApi = function(apiUrl, token) {
     this.apiUrl = apiUrl;
     var ajaxOptions = {
-      dataType: "json",
+      dataType: 'json',
       cache: false,
       headers: {Authorization: 'token ' + token}
     };
@@ -32,7 +32,7 @@
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
     return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
-  }
+  };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
     return this.ajax(this.apiUrl + '/orgs/' + organization + '/repos');
@@ -49,7 +49,7 @@
         });
       }
     );
-  }
+  };
 
   GhApi.prototype.getRepoPull = function(repoPath, prNum) {
     var self = this;
@@ -60,7 +60,7 @@
           return $.extend(pull, details);
         });
       });
-  }
+  };
 
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return Promise.props({
@@ -84,31 +84,31 @@
     });
 
     return result;
-  } ;
+  };
 
   var LS = function(namespace) {
     this.keyOf = function(name) {
       return name + ':' + namespace;
-    }
-  }
+    };
+  };
 
   LS.prototype.getAccessToken = function() {
     return window.localStorage[this.keyOf('github_access_token')];
-  }
+  };
 
   LS.prototype.setAccessToken = function(accessToken) {
     return window.localStorage[this.keyOf('github_access_token')] = accessToken;
-  }
+  };
 
   LS.prototype.unsetAccessToken = function() {
     delete window.localStorage[this.keyOf('github_access_token')];
-  }
+  };
 
   LS.prototype.getRepoPaths = function() {
     var repos = window.localStorage[this.keyOf('repos')];
 
     return repos ? JSON.parse(repos) : [];
-  }
+  };
 
   LS.prototype.addRepoPath = function(repoPath) {
     var repoPaths = this.getRepoPaths();
@@ -116,7 +116,7 @@
       repoPaths.push(repoPath);
       localStorage[this.keyOf('repos')] = JSON.stringify(repoPaths);
     }
-  }
+  };
 
   function updateSelectBoxes(repoPaths) {
     $('#repoPathSelect').html('<option></option>');
@@ -255,8 +255,9 @@
       '<td>' + pullRequest.needsMyApproval + '</td>' +
       '<td><button class="refresh">Refresh</button></td>';
 
-    return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name + '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
-  }
+    return '<tr data-pr-num="' + pullRequest.number + '" data-repo-path="' + pullRequest.base.repo.full_name +
+      '" class="' + rowClass(pullRequest) + '" data-link="' + pullRequest.html_url + '">' + row + + '</tr>';
+  };
 
   function approvalTitle(pullRequest) {
     var title = '';
@@ -273,11 +274,11 @@
     if (pullRequest.approved && pullRequest.isRebased) {
       return 'success';
     }
-    
+
     if (!pullRequest.iHaveApproved && !pullRequest.iAmOwner) {
       return 'info';
     }
-    
+
     if (pullRequest.iAmOwner && !pullRequest.isRebased) {
       return 'warning';
     }
@@ -354,4 +355,4 @@
   };
 
   window.PullRequestParser = PullRequestParser;
-}(window, jQuery, Promise))
+}(window, jQuery, Promise));
