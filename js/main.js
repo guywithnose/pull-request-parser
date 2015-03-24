@@ -331,12 +331,12 @@
       });
       updateSelectBoxes(ls.getRepoPaths());
 
-      $('#approved-prs tbody').html('');
+      dataTable.clear().draw();
       parseRepos(ghApi, repoPaths);
     });
 
     $('#checkAllRepos').click(function() {
-      $('#approved-prs tbody').html('');
+      dataTable.clear().draw();
       parseRepos(ghApi, ls.getRepoPaths());
     });
 
