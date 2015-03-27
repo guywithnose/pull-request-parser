@@ -38,11 +38,8 @@
     return this.ajax(this.apiUrl + '/user');
   };
 
-  GhApi.prototype.getRepoCommits = function(repoPath) {
-    var self = this;
-    return this.getRepoData(repoPath).then(function(repo) {
-      return self.ajax(self.apiUrl + '/repos/' + repoPath + '/commits/' + repo.default_branch);
-    });
+  GhApi.prototype.getRepoCommits = function(repoPath, branch) {
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/' + (branch || 'master'));
   };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
@@ -148,10 +145,12 @@
     }
   }
 
-  function parsePullRequests(ghApi, repoPath) {
+  function parsePullRequests(ghApi, repo) {
+    var repoPath = repo.full_name;
+
     Promise.join(
         ghApi.getUser(),
-        ghApi.getRepoCommits(repoPath),
+        ghApi.getRepoCommits(repoPath, repo.default_branch),
         ghApi.getRepoPulls(repoPath),
         function(user, commits, pulls) {
           parseAllPullRequests(user, commits, pulls);
@@ -165,10 +164,12 @@
         ghApi.getOrganizationRepos(spec).catch(function() {
           return ghApi.getUserRepos(spec);
         }).each(function(repo) {
-          parsePullRequests(ghApi, repo.full_name);
+          parsePullRequests(ghApi, repo);
         });
       } else {
-        parsePullRequests(ghApi, spec);
+        ghApi.getRepoData(spec).then(function(repo) {
+          parsePullRequests(ghApi, repo);
+        });
       }
     });
   }
@@ -182,14 +183,16 @@
   }
 
   function refreshPr(ghApi, repoPath, prNum) {
-    Promise.join(
-        ghApi.getUser(),
-        ghApi.getRepoCommits(repoPath),
-        ghApi.getRepoPull(repoPath, prNum),
-        function(user, commit, pull) {
-          parsePullRequest(user.login, commit.sha, pull);
-        }
-    );
+    ghApi.getRepoData(repoPath).then(function(repo) {
+      Promise.join(
+          ghApi.getUser(),
+          ghApi.getRepoCommits(repoPath, repo.default_branch),
+          ghApi.getRepoPull(repoPath, prNum),
+          function(user, commit, pull) {
+            parsePullRequest(user.login, commit.sha, pull);
+          }
+      );
+    });
   }
 
   function parsePullRequest(username, headCommit, pullRequest) {
