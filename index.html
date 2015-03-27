@@ -8,13 +8,16 @@
 </head>
 <body>
   <div class="container-fluid">
-    <div id="getAccessToken" style="display:none">
+    <div id="getAccessToken" style="display:none" class='col-xs-2'>
       <div>
-        <label>Access Token</label>
-        <input id="accessToken" type="text" />
+        Before you can use the pull-request parser, you must <a href='https://help.github.com/articles/creating-an-access-token-for-command-line-use/'>authorize an access token</a>.
       </div>
       <div>
-        <button class='btn btn-primary' id="saveAccessToken">Save</button>
+        <label class='control-label'>Access Token</label>
+        <input class='form-control' id="accessToken" type="text" />
+      </div>
+      <div>
+        <button class='btn btn-primary col-xs-12' id="saveAccessToken">Save</button>
       </div>
     </div>
     <div class='container-fluid form-horizontal' id="pickRepo" style="display:none">
@@ -35,7 +38,7 @@
       </div>
     </div>
     <br>
-    <div class='contianer-fluid'>
+    <div id="pr-data" class='contianer-fluid' style="display:none">
       <table class="table table-striped table-hover table-bordered" id="approved-prs">
         <thead>
           <tr>
