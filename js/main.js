@@ -6,6 +6,12 @@
     info: false,
     search: {
       regex: true
+    },
+    classes: {
+      sFilterInput: 'form-control'
+    },
+    language: {
+      search: '<div class="col-xs-2"><label class="control-label">Search:</label></div><div class="col-xs-8">_INPUT_</div>'
     }
   });
 
