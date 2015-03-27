@@ -318,6 +318,7 @@
       ghApi = new GhApi(apiUrl, ls.getAccessToken());
       ghApi.getUser().then(function() {
         $('#pickRepo').show();
+        $('#pr-data').show();
       }).catch(function() {
         ls.unsetAccessToken();
         $('#getAccessToken').show();
@@ -334,6 +335,7 @@
         ls.setAccessToken($('#accessToken').val());
         $('#getAccessToken').hide();
         $('#pickRepo').show();
+        $('#pr-data').show();
       }).catch(function() {
         alert('It appears that access token is invalid');
       });
