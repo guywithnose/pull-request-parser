@@ -14,38 +14,45 @@
         <input id="accessToken" type="text" />
       </div>
       <div>
-        <button id="saveAccessToken">Save</button>
+        <button class='btn btn-primary' id="saveAccessToken">Save</button>
       </div>
     </div>
-    <div id="pickRepo" style="display:none">
-      <div>
-        <button id="checkAllRepos">Check all repos</button>
+    <div class='container-fluid form-horizontal' id="pickRepo" style="display:none">
+      <div class='form-group'>
+        <label class='control-label'>Repo Path:</label>
+        <div>
+          <select class="form-control" id="repoPathSelect" style="display:none"></select>
+          <textarea class="form-control" id="repoPath" type="text"></textarea>
+        </div>
       </div>
       <div>
-        <label>Repo Path</label>
-        <textarea id="repoPath" type="text"></textarea>
-        <select id="repoPathSelect" style="display:none"></select>
-      </div>
-      <div>
-        <button id="parsePullRequests">Parse Pull Requests</button>
+        <div class='col-xs-6'>
+          <button class='btn btn-success form-control' id="parsePullRequests">Parse Pull Requests</button>
+        </div>
+        <div class='col-xs-6'>
+          <button class='btn btn-primary form-control' id="checkAllRepos">Check all repos</button>
+        </div>
       </div>
     </div>
-    <table class="table table-striped table-hover table-bordered" id="approved-prs">
-      <thead>
-        <tr>
-          <th>Repo</th>
-          <th>Pull Request #</th>
-          <th>Owner</th>
-          <th>Branch</th>
-          <th>Approvals</th>
-          <th>Rebased</th>
-          <th>Build Passed</th>
-          <th>Needs My Approval</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <br>
+    <div class='contianer-fluid'>
+      <table class="table table-striped table-hover table-bordered" id="approved-prs">
+        <thead>
+          <tr>
+            <th>Repo</th>
+            <th>Pull Request #</th>
+            <th>Owner</th>
+            <th>Branch</th>
+            <th>Approvals</th>
+            <th>Rebased</th>
+            <th>Build Passed</th>
+            <th>Needs My Approval</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/2.9.13/bluebird.min.js"></script>

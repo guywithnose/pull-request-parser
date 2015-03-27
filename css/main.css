@@ -19,3 +19,8 @@
 .table-hover > tbody > tr.warning:hover > th {
     background-color: #FAF2AC;
 }
+
+.dataTables_wrapper .dataTables_filter {
+  float: left;
+  text-align: left;
+}
