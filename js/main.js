@@ -39,7 +39,10 @@
   };
 
   GhApi.prototype.getRepoCommits = function(repoPath) {
-    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/master');
+    var self = this;
+    return this.getRepoData(repoPath).then(function(repo) {
+      return self.ajax(self.apiUrl + '/repos/' + repoPath + '/commits/' + repo.default_branch);
+    });
   };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
@@ -48,6 +51,10 @@
 
   GhApi.prototype.getUserRepos = function(organization) {
     return this.ajax(this.apiUrl + '/users/' + organization + '/repos');
+  };
+
+  GhApi.prototype.getRepoData = function(repoPath) {
+    return this.ajax(this.apiUrl + '/repos/' + repoPath);
   };
 
   GhApi.prototype.getRepoPulls = function(repoPath) {
