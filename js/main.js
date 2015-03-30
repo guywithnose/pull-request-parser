@@ -365,6 +365,13 @@
       parseRepos(ghApi, [$(this).data().repoPath]);
     });
 
+    $('#approved-prs').on('click', 'td', function() {
+      var link = $(this).find('a');
+      if (link.length === 1 && link.attr('href')) {
+        window.open(link.attr('href'), '_blank');
+      }
+    });
+
     $('#saveAccessToken').click(function() {
       ghApi = new GhApi(apiUrl, $('#accessToken').val());
       ghApi.getUser().then(function() {
