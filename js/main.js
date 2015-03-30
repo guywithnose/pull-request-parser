@@ -140,15 +140,40 @@
     }
   };
 
-  function updateSelectBoxes(repoPaths) {
-    $('#repoPathSelect').html('<option></option>');
-    if (repoPaths) {
-      for (var i in repoPaths) {
-          $('#repoPathSelect').append('<option>' + repoPaths[i] + '</option>');
-      }
-
-      $('#repoPathSelect').show();
+  LS.prototype.removeRepoPath = function(repoPath) {
+    var repoPaths = this.getRepoPaths();
+    var index = repoPaths.indexOf(repoPath);
+    if (index !== -1) {
+      repoPaths = repoPaths.splice(0, index).concat(repoPaths.splice(index + 1));
+      localStorage[this.keyOf('repos')] = JSON.stringify(repoPaths);
     }
+  };
+
+  function updateOptionBoxes(repoPaths) {
+    repoPaths.sort();
+    var leftOptionGroup = $('#repoPathOptionsLeft').html('');
+    var rightOptionGroup = $('#repoPathOptionsRight').html('');
+    var leftOptions, rightOptions;
+    if (repoPaths.length <= 3) {
+      leftOptions = repoPaths;
+      rightOptions = [];
+    } else {
+      var middleIndex = Math.ceil(repoPaths.length / 2);
+      leftOptions = repoPaths.slice(0, middleIndex);
+      rightOptions = repoPaths.slice(middleIndex);
+    }
+
+    buildOptionBox(leftOptionGroup, leftOptions);
+    buildOptionBox(rightOptionGroup, rightOptions);
+  }
+
+  function buildOptionBox(box, repoPaths) {
+    $.each(repoPaths, function(index, repoPath) {
+      box.append(
+        '<a class="list-group-item list-group-item-info btn-danger" data-repo-path="' + repoPath + '"><span class="repoPathOption">' + repoPath +
+        '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
+      );
+    });
   }
 
   function parsePullRequests(ghApi, repo) {
@@ -327,7 +352,18 @@
       $('#getAccessToken').show();
     }
 
-    updateSelectBoxes(ls.getRepoPaths());
+    updateOptionBoxes(ls.getRepoPaths());
+
+    $('#repoPathOptions').on('click', 'a span.badge', function(event) {
+      ls.removeRepoPath($(this).parents('.list-group-item').data().repoPath);
+      updateOptionBoxes(ls.getRepoPaths());
+      event.stopPropagation();
+    });
+
+    $('#repoPathOptions').on('click', 'a', function() {
+      dataTable.clear().draw();
+      parseRepos(ghApi, [$(this).data().repoPath]);
+    });
 
     $('#saveAccessToken').click(function() {
       ghApi = new GhApi(apiUrl, $('#accessToken').val());
@@ -347,7 +383,7 @@
       $.each(repoPaths, function(index, repoPath) {
         ls.addRepoPath(repoPath);
       });
-      updateSelectBoxes(ls.getRepoPaths());
+      updateOptionBoxes(ls.getRepoPaths());
 
       dataTable.clear().draw();
       parseRepos(ghApi, repoPaths);
@@ -356,10 +392,6 @@
     $('#checkAllRepos').click(function() {
       dataTable.clear().draw();
       parseRepos(ghApi, ls.getRepoPaths());
-    });
-
-    $('#repoPathSelect').change(function(){
-      $('#repoPath').val($(this).val());
     });
 
     $('#approved-prs').on('click', '.refresh', function() {

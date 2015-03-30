@@ -24,3 +24,14 @@
   float: left;
   text-align: left;
 }
+
+#repoPath {
+  height: 38px;
+}
+
+.repoPathOption {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 70%;
+}
