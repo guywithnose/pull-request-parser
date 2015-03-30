@@ -170,7 +170,7 @@
   function buildOptionBox(box, repoPaths) {
     $.each(repoPaths, function(index, repoPath) {
       box.append(
-        '<a class="list-group-item list-group-item-info btn-danger" data-repo-path="' + repoPath + '"><span class="repoPathOption">' + repoPath +
+        '<a class="list-group-item list-group-item-info btn-danger btn-link" data-repo-path="' + repoPath + '"><span class="repoPathOption">' + repoPath +
         '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
       );
     });
@@ -363,6 +363,13 @@
     $('#repoPathOptions').on('click', 'a', function() {
       dataTable.clear().draw();
       parseRepos(ghApi, [$(this).data().repoPath]);
+    });
+
+    $('#approved-prs').on('click', 'td', function() {
+      var link = $(this).find('a');
+      if (link.length === 1 && link.attr('href')) {
+        window.open(link.attr('href'), '_blank');
+      }
     });
 
     $('#saveAccessToken').click(function() {
