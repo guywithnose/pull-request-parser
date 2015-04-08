@@ -182,8 +182,8 @@
   function buildOptionBox(box, repoPaths) {
     $.each(repoPaths, function(index, repoPath) {
       box.append(
-        '<a class="list-group-item list-group-item-info btn-danger btn-link" data-repo-path="' + repoPath + '"><span class="repoPathOption">' + repoPath +
-        '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
+        '<a class="list-group-item list-group-item-info btn-danger btn-link" data-repo-path="' + repoPath + '"><span class="repoPathOption">' +
+        repoPath + '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
       );
     });
   }
@@ -271,7 +271,11 @@
       pullRequest.state,
       pullRequest.needsMyApproval,
       '<button class="refresh">Refresh</button>'
-    ]).draw().nodes().to$().addClass(rowClass(pullRequest)).data({prNum: pullRequest.number, repoPath: pullRequest.base.repo.full_name});
+    ]).draw().nodes().to$().addClass(rowClass(pullRequest)).data(
+      {prNum: pullRequest.number, repoPath: pullRequest.base.repo.full_name}
+    ).find('td a').each(function(index, element) {
+      $(element).parent().addClass('pointer');
+    });
   };
 
   function getState(statuses) {
@@ -393,6 +397,10 @@
       if (link.length === 1 && link.attr('href')) {
         window.open(link.attr('href'), '_blank');
       }
+    });
+
+    $('#approved-prs').on('click', 'td a', function(event) {
+      event.stopPropagation();
     });
 
     $('#saveAccessToken').click(function() {
