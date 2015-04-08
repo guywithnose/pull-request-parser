@@ -12,7 +12,19 @@
     },
     language: {
       search: '<div class="col-xs-2"><label class="control-label">Search:</label></div><div class="col-xs-8">_INPUT_</div>'
-    }
+    },
+    columns: [
+      {"visible": false},
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
   });
 
   var GhApi = function(apiUrl, token) {
@@ -239,6 +251,7 @@
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
 
     dataTable.row.add([
+      JSON.stringify(pullRequest),
       '<a href="' + pullRequest.base.repo.html_url + '" target="_blank">' + pullRequest.base.repo.full_name + '</a>',
       '<a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a>',
       pullRequest.user.login,
