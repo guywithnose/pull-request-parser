@@ -202,19 +202,29 @@
   }
 
   function parseRepos(ghApi, specs) {
+    updateEmptyTableText('Loading data <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>');
     $.each(specs, function(index, spec) {
       if (spec.indexOf('/') === -1) {
         ghApi.getOrganizationRepos(spec).catch(function() {
           return ghApi.getUserRepos(spec);
         }).each(function(repo) {
           parsePullRequests(ghApi, repo);
+        }).catch(function() {
+          updateEmptyTableText('No pull requests found');
         });
       } else {
         ghApi.getRepoData(spec).then(function(repo) {
           parsePullRequests(ghApi, repo);
+        }).catch(function() {
+          updateEmptyTableText('No pull requests found');
         });
       }
     });
+  }
+
+  function updateEmptyTableText(text) {
+    dataTable.settings()[0].oLanguage.sEmptyTable = text;
+    dataTable.draw();
   }
 
   function parseAllPullRequests(user, commit, pulls) {
