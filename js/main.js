@@ -182,8 +182,8 @@
   function buildOptionBox(box, repoPaths) {
     $.each(repoPaths, function(index, repoPath) {
       box.append(
-        '<a class="list-group-item list-group-item-info btn-danger btn-link" data-repo-path="' + repoPath + '"><span class="repoPathOption">' + repoPath +
-        '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
+        '<a class="list-group-item list-group-item-info btn-danger btn-link" data-repo-path="' + repoPath + '"><span class="repoPathOption">' +
+        repoPath + '</span><span class="badge glyphicon glyphicon-remove btn btn-danger"> </span></a>'
       );
     });
   }
