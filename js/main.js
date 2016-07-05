@@ -56,8 +56,11 @@
     return this.ajax(this.apiUrl + '/user');
   };
 
-  GhApi.prototype.getRepoCommits = function(repoPath, branch) {
-    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/' + (branch || 'master'));
+  GhApi.prototype.getBranchCommit = function(repoPath, branch) {
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/commits/' + (branch || 'master')).then(function(commit) {
+      commit.branch = branch;
+      return commit;
+    });
   };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
@@ -193,10 +196,28 @@
 
     Promise.join(
         ghApi.getUser(),
-        ghApi.getRepoCommits(repoPath, repo.default_branch),
-        ghApi.getRepoPulls(repoPath),
-        function(user, commits, pulls) {
-          parseAllPullRequests(user, commits, pulls);
+        ghApi.getRepoPulls(repoPath).then(function(pulls) {
+          var baseBranches = [];
+          var promises = [];
+          for (var i in pulls) {
+            var baseBranch = pulls[i].base.ref;
+            if (baseBranches.indexOf(baseBranch) === -1) {
+              baseBranches.push(baseBranch);
+              promises.push(ghApi.getBranchCommit(repoPath, baseBranch));
+            }
+          }
+
+          return Promise.all(promises).then(function(baseBranchCommits) {
+            baseBranchCommitsObject = {};
+            for (var i in baseBranchCommits) {
+              baseBranchCommitsObject[baseBranchCommits[i].branch] = baseBranchCommits[i];
+            }
+
+            return {pulls: pulls, baseBranchCommits: baseBranchCommitsObject};
+          });
+        }),
+        function(user, pullData) {
+          parseAllPullRequests(user, pullData.baseBranchCommits, pullData.pulls);
         }
     );
   }
@@ -227,11 +248,10 @@
     dataTable.draw();
   }
 
-  function parseAllPullRequests(user, commit, pulls) {
+  function parseAllPullRequests(user, baseBranchCommits, pulls) {
     var username = user.login;
-    var headCommit = commit.sha;
     for (var i in pulls) {
-      parsePullRequest(username, headCommit, pulls[i]);
+      parsePullRequest(username, baseBranchCommits[pulls[i].base.ref].sha, pulls[i]);
     }
   }
 
@@ -239,10 +259,13 @@
     ghApi.getRepoData(repoPath).then(function(repo) {
       Promise.join(
           ghApi.getUser(),
-          ghApi.getRepoCommits(repoPath, repo.default_branch),
-          ghApi.getRepoPull(repoPath, prNum),
-          function(user, commit, pull) {
-            parsePullRequest(user.login, commit.sha, pull);
+          ghApi.getRepoPull(repoPath, prNum).then(function(pull) {
+            return ghApi.getBranchCommit(repoPath, pull.base.ref).then(function(commit) {
+              return {commit: commit, pull: pull};
+            });
+          }),
+          function(user, pullData) {
+            parsePullRequest(user.login, pullData.commit.sha, pullData.pull);
           }
       );
     });
