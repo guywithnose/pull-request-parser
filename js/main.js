@@ -23,6 +23,7 @@
       null,
       null,
       null,
+      null,
       null
     ]
   });
@@ -65,6 +66,10 @@
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
     return this.ajax(this.apiUrl + '/orgs/' + organization + '/repos');
+  };
+
+  GhApi.prototype.getPullLabels = function(repoPath, prId) {
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/issues/' + prId + '/labels');
   };
 
   GhApi.prototype.getUserRepos = function(organization) {
@@ -198,23 +203,33 @@
         ghApi.getUser(),
         ghApi.getRepoPulls(repoPath).then(function(pulls) {
           var baseBranches = [];
-          var promises = [];
+          var baseBranchPromises = [];
+          var labelPromises = [];
           for (var i in pulls) {
             var baseBranch = pulls[i].base.ref;
+            labelPromises.push(ghApi.getPullLabels(repoPath, pulls[i].number));
             if (baseBranches.indexOf(baseBranch) === -1) {
               baseBranches.push(baseBranch);
-              promises.push(ghApi.getBranchCommit(repoPath, baseBranch));
+              baseBranchPromises.push(ghApi.getBranchCommit(repoPath, baseBranch));
             }
           }
 
-          return Promise.all(promises).then(function(baseBranchCommits) {
-            baseBranchCommitsObject = {};
-            for (var i in baseBranchCommits) {
-              baseBranchCommitsObject[baseBranchCommits[i].branch] = baseBranchCommits[i];
-            }
+          return Promise.join(
+            Promise.all(baseBranchPromises),
+            Promise.all(labelPromises),
+            function(baseBranchCommits, labels) {
+              baseBranchCommitsObject = {};
+              for (var i in baseBranchCommits) {
+                baseBranchCommitsObject[baseBranchCommits[i].branch] = baseBranchCommits[i];
+              }
 
-            return {pulls: pulls, baseBranchCommits: baseBranchCommitsObject};
-          });
+              for (var i in labels) {
+                pulls[i].labels = labels[i];
+              }
+
+              return {pulls: pulls, baseBranchCommits: baseBranchCommitsObject};
+            }
+          );
         }),
         function(user, pullData) {
           parseAllPullRequests(user, pullData.baseBranchCommits, pullData.pulls);
@@ -264,7 +279,9 @@
               return {commit: commit, pull: pull};
             });
           }),
-          function(user, pullData) {
+          ghApi.getPullLabels(repoPath, prNum),
+          function(user, pullData, labels) {
+            pullData.pull.labels = labels;
             parsePullRequest(user.login, pullData.commit.sha, pullData.pull);
           }
       );
@@ -282,6 +299,7 @@
     var state = getState(pullRequest.statuses);
     pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
+    pullRequest.labelHtml = buildLabels(pullRequest.labels);
 
     dataTable.row.add([
       JSON.stringify(pullRequest),
@@ -293,6 +311,7 @@
       pullRequest.rebasedText,
       pullRequest.state,
       pullRequest.needsMyApproval,
+      pullRequest.labelHtml,
       '<button class="refresh">Refresh</button>'
     ]).draw().nodes().to$().addClass(rowClass(pullRequest)).data(
       {prNum: pullRequest.number, repoPath: pullRequest.base.repo.full_name}
@@ -300,6 +319,16 @@
       $(element).parent().addClass('pointer');
     });
   };
+
+  function buildLabels(labels) {
+    var labelHtml = '';
+    for (var i in labels) {
+      labelHtml += '<span title="' + labels[i].name + '" style="margin: 2px; background-color: #' + labels[i].color +
+        ';">&nbsp;&nbsp;&nbsp;&nbsp;</span>';
+    }
+
+    return labelHtml;
+  }
 
   function getState(statuses) {
     if (statuses.length == 0) {
