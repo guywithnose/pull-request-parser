@@ -24,6 +24,7 @@
       null,
       null,
       null,
+      null,
       null
     ]
   });
@@ -307,6 +308,7 @@
       '<a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a>',
       pullRequest.user.login,
       pullRequest.head.ref,
+      pullRequest.base.ref,
       '<div title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>',
       pullRequest.rebasedText,
       pullRequest.state,
