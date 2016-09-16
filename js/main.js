@@ -325,8 +325,8 @@
   function buildLabels(labels) {
     var labelHtml = '';
     for (var i in labels) {
-      labelHtml += '<span title="' + labels[i].name + '" style="margin: 2px; background-color: #' + labels[i].color +
-        ';">&nbsp;&nbsp;&nbsp;&nbsp;</span>';
+      labelHtml += '<span title="' + labels[i].name + '" style="margin: 0 2px; height: 22px; overflow: hidden; width: 10px; text-align: center; line-height: 0.9; color: white; font-size: 8px; display: inline-block; background-color: #' + labels[i].color +
+        ';">' + $.trim(labels[i].name.replace(/\b([a-zA-Z])[a-zA-Z]*([^a-zA-Z]+|$)/g, '$1 ')).toUpperCase() + '</span>';
     }
 
     return labelHtml;
