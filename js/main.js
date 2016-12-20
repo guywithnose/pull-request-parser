@@ -34,7 +34,7 @@
     var ajaxOptions = {
       dataType: 'json',
       cache: false,
-      headers: {Authorization: 'token ' + token}
+      headers: {Authorization: 'token ' + token, Accept: 'application/vnd.github.black-cat-preview+json'}
     };
 
     this.ajax = function(url) {
@@ -63,6 +63,11 @@
       commit.branch = branch;
       return commit;
     });
+  };
+
+  GhApi.prototype.getReviews = function(repoPath, prNum) {
+    // We have to catch this once since not all versions of github support it
+    return this.ajax(this.apiUrl + '/repos/' + repoPath + '/pulls/' + prNum + '/reviews').catch(function() {return [];});
   };
 
   GhApi.prototype.getOrganizationRepos = function(organization) {
@@ -108,6 +113,7 @@
   GhApi.prototype.getPullDetails = function(pullRequest) {
     return Promise.props({
       comments: this.ajax(pullRequest.comments_url),
+      review_comments: this.ajax(pullRequest.review_comments_url),
       commits: this.ajax(pullRequest.commits_url || (pullRequest.url + '/commits')),
       statuses: this.ajax(pullRequest.statuses_url || pullRequest.base.repo.statuses_url.replace('{sha}', pullRequest.head.sha))
     });
@@ -233,7 +239,7 @@
           );
         }),
         function(user, pullData) {
-          parseAllPullRequests(user, pullData.baseBranchCommits, pullData.pulls);
+          parseAllPullRequests(ghApi, user, pullData.baseBranchCommits, pullData.pulls);
         }
     );
   }
@@ -264,11 +270,17 @@
     dataTable.draw();
   }
 
-  function parseAllPullRequests(user, baseBranchCommits, pulls) {
+  function parseAllPullRequests(ghApi, user, baseBranchCommits, pulls) {
     var username = user.login;
     for (var i in pulls) {
-      parsePullRequest(username, baseBranchCommits[pulls[i].base.ref].sha, pulls[i]);
+      getReviewsAndParsePullRequest(ghApi, username, baseBranchCommits[pulls[i].base.ref].sha, pulls[i]);
     }
+  }
+
+  function getReviewsAndParsePullRequest(ghApi, username, sha, pullRequest) {
+    ghApi.getReviews(pullRequest.base.repo.owner.login + '/' + pullRequest.base.repo.name, pullRequest.number).then(function(reviews) {
+      parsePullRequest(username, sha, pullRequest, reviews);
+    });
   }
 
   function refreshPr(ghApi, repoPath, prNum) {
@@ -281,17 +293,18 @@
             });
           }),
           ghApi.getPullLabels(repoPath, prNum),
-          function(user, pullData, labels) {
+          ghApi.getReviews(repoPath, prNum),
+          function(user, pullData, labels, reviews) {
             pullData.pull.labels = labels;
-            parsePullRequest(user.login, pullData.commit.sha, pullData.pull);
+            parsePullRequest(user.login, pullData.commit.sha, pullData.pull, reviews);
           }
       );
     });
   }
 
-  function parsePullRequest(username, headCommit, pullRequest) {
+  function parsePullRequest(username, headCommit, pullRequest, reviews) {
     pullRequest.iAmOwner = pullRequest.user.login == username;
-    pullRequest.approvals = approvingComments(pullRequest.comments);
+    pullRequest.approvals = approvingComments(pullRequest.comments.concat(pullRequest.review_comments), reviews);
     pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
     pullRequest.approved = pullRequest.numApprovals >= MIN_APPROVALS;
     pullRequest.iHaveApproved = !!pullRequest.approvals[username];
@@ -343,7 +356,7 @@
   /*
    * Returns the users that have a comment containing :+1: or LGTM.
    */
-  function approvingComments(comments) {
+  function approvingComments(comments, reviews) {
     var result = {};
     for (var i in comments) {
       if (isApproval(comments[i]) && $.inArray(comments[i].user.login, result) === -1) {
@@ -352,6 +365,16 @@
         }
 
         result[comments[i].user.login].push(comments[i].body);
+      }
+    }
+
+    for (var i in reviews) {
+      if (reviews[i].state === 'APPROVED') {
+        if (!result[reviews[i].user.login]) {
+          result[reviews[i].user.login] = [];
+        }
+
+        result[reviews[i].user.login].push(reviews[i].body);
       }
     }
 
