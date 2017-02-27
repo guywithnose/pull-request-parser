@@ -34,7 +34,7 @@
     var ajaxOptions = {
       dataType: 'json',
       cache: false,
-      headers: {Authorization: 'token ' + token, Accept: 'application/vnd.github.black-cat-preview+json'}
+      headers: {Authorization: 'token ' + token, Accept: 'application/vnd.github.black-cat-preview.full+json'}
     };
 
     this.ajax = function(url) {
@@ -321,7 +321,8 @@
       pullRequest.user.login,
       pullRequest.head.ref,
       pullRequest.base.ref,
-      '<div title="' + approvalTitle(pullRequest) + '">' + pullRequest.numApprovals + '</td>',
+      "<div data-toggle='popover' data-html='true' data-trigger='hover' data-content='" + approvalHtml(pullRequest) + "'>" +
+        pullRequest.numApprovals + '</td>',
       pullRequest.rebasedText,
       pullRequest.state,
       pullRequest.needsMyApproval,
@@ -332,12 +333,15 @@
     ).find('td a').each(function(index, element) {
       $(element).parent().addClass('pointer');
     });
+    $('[data-toggle="popover"]').popover();
   };
 
   function buildLabels(labels) {
     var labelHtml = '';
     for (var i in labels) {
-      labelHtml += '<span title="' + labels[i].name + '" style="margin: 0 2px; height: 22px; overflow: hidden; width: 10px; text-align: center; line-height: 0.9; color: white; font-size: 8px; display: inline-block; background-color: #' + labels[i].color +
+      labelHtml += '<span title="' + labels[i].name +
+        '" style="margin: 0 2px; height: 22px; overflow: hidden; width: 10px; text-align: center; line-height: 0.9; color: white; ' +
+        'font-size: 8px; display: inline-block; background-color: #' + labels[i].color +
         ';">' + $.trim(labels[i].name.replace(/\b([a-zA-Z])[a-zA-Z]*([^a-zA-Z]+|$)/g, '$1 ')).toUpperCase() + '</span>';
     }
 
@@ -383,7 +387,7 @@
           result[comments[i].user.login] = [];
         }
 
-        result[comments[i].user.login].push(comments[i].body);
+        result[comments[i].user.login].push(comments[i].body_html);
       }
     }
 
@@ -393,7 +397,7 @@
           result[reviews[i].user.login] = [];
         }
 
-        result[reviews[i].user.login].push(reviews[i].body);
+        result[reviews[i].user.login].push(reviews[i].body_html);
       }
     }
 
@@ -422,15 +426,15 @@
     return false;
   }
 
-  function approvalTitle(pullRequest) {
-    var title = '';
+  function approvalHtml(pullRequest) {
+    var comments = [];
     for (var commentor in pullRequest.approvals) {
       for (var i in pullRequest.approvals[commentor]) {
-        title += commentor + ': ' + pullRequest.approvals[commentor][i] + '\n';
+        comments.push(commentor + ': ' + pullRequest.approvals[commentor][i]);
       }
     }
 
-    return title;
+    return comments.join('<BR><BR>');
   }
 
   function rowClass(pullRequest) {
