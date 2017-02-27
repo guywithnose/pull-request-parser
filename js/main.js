@@ -368,9 +368,16 @@
       }
     }
 
-    var html = [];
+    var keys = [];
     for (var i in contexts) {
-      html.push('<span title="' + i + '">' + contexts[i] + '</span>');
+      keys.push(i);
+    }
+
+    keys.sort();
+
+    var html = [];
+    for (var i in keys) {
+      html.push('<span title="' + keys[i] + '">' + contexts[keys[i]] + '</span>');
     }
 
     return html.join('/');
