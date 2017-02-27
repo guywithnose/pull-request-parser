@@ -14,7 +14,7 @@
       search: '<div class="col-xs-2"><label class="control-label">Search:</label></div><div class="col-xs-8">_INPUT_</div>'
     },
     columns: [
-      {"visible": false},
+      {'visible': false},
       null,
       null,
       null,
@@ -310,8 +310,7 @@
     pullRequest.iHaveApproved = !!pullRequest.approvals[username];
     pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
     pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
-    var state = getState(pullRequest.statuses);
-    pullRequest.state = state == 'success' ? 'Y' : state == 'none' || state == 'pending' ? '?' : 'N';
+    pullRequest.state = getState(pullRequest.statuses);
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
     pullRequest.labelHtml = buildLabels(pullRequest.labels);
 
@@ -350,7 +349,27 @@
       return 'none';
     }
 
-    return statuses[0].state;
+    var contexts = {};
+    for (var i in statuses) {
+      if (!contexts[statuses[i].context]) {
+        contexts[statuses[i].context] = '?';
+      }
+
+      if (statuses[i].state === 'success') {
+        contexts[statuses[i].context] = 'Y';
+      }
+
+      if (statuses[i].state === 'failure') {
+        contexts[statuses[i].context] = 'N';
+      }
+    }
+
+    var html = [];
+    for (var i in contexts) {
+      html.push('<span title="' + i + '">' + contexts[i] + '</span>');
+    }
+
+    return html.join('/');
   }
 
   /*
