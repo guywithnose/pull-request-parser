@@ -359,6 +359,10 @@
         contexts[statuses[i].context] = '?';
       }
 
+      if (contexts[statuses[i].context] !== '?') {
+        continue;
+      }
+
       if (statuses[i].state === 'success') {
         contexts[statuses[i].context] = 'Y';
       }
