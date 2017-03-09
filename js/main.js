@@ -319,7 +319,7 @@
     dataTable.row.add([
       JSON.stringify(pullRequest),
       '<a href="' + pullRequest.base.repo.html_url + '" target="_blank">' + pullRequest.base.repo.full_name + '</a>',
-      '<a href="' + pullRequest.html_url + '" target="_blank">' + pullRequest.number + '</a>',
+      '<a href="' + pullRequest.html_url + '" target="_blank" title="' + pullRequest.title + '">' + pullRequest.number + '</a>',
       pullRequest.user.login,
       pullRequest.head.ref,
       pullRequest.base.ref,
