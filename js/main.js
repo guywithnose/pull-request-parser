@@ -296,7 +296,9 @@
           ghApi.getReviews(repoPath, prNum),
           function(user, pullData, labels, reviews) {
             pullData.pull.labels = labels;
-            parsePullRequest(user.login, pullData.commit.sha, pullData.pull, reviews);
+            if (pullData.pull.state === 'open') {
+              parsePullRequest(user.login, pullData.commit.sha, pullData.pull, reviews);
+            }
           }
       );
     });
