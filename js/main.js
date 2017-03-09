@@ -358,19 +358,19 @@
     var contexts = {};
     for (var i in statuses) {
       if (!contexts[statuses[i].context]) {
-        contexts[statuses[i].context] = '?';
+        contexts[statuses[i].context] = {state: '?', url: statuses[i].target_url};
       }
 
-      if (contexts[statuses[i].context] !== '?') {
+      if (contexts[statuses[i].context].state !== '?') {
         continue;
       }
 
       if (statuses[i].state === 'success') {
-        contexts[statuses[i].context] = 'Y';
+        contexts[statuses[i].context] = {state: 'Y', url: statuses[i].target_url};
       }
 
       if (statuses[i].state === 'failure') {
-        contexts[statuses[i].context] = 'N';
+        contexts[statuses[i].context] = {state: 'N', url: statuses[i].target_url};
       }
     }
 
@@ -383,7 +383,11 @@
 
     var html = [];
     for (var i in keys) {
-      html.push('<span title="' + keys[i] + '">' + contexts[keys[i]] + '</span>');
+      if (contexts[keys[i]].url !== undefined && contexts[keys[i]].url !== '') {
+        html.push('<a title="' + keys[i] + '" target="_blank" href="' + contexts[keys[i]].url + '">' + contexts[keys[i]].state + '</a>');
+      } else {
+        html.push('<span title="' + keys[i] + '">' + contexts[keys[i]].state + '</span>');
+      }
     }
 
     return html.join('/');
