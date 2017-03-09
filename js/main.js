@@ -310,7 +310,7 @@
     pullRequest.iHaveApproved = !!pullRequest.approvals[username];
     pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
     pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
-    pullRequest.state = getState(pullRequest.statuses);
+    pullRequest.status = getState(pullRequest.statuses);
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
     pullRequest.labelHtml = buildLabels(pullRequest.labels);
 
@@ -324,7 +324,7 @@
       "<div data-toggle='popover' data-html='true' data-trigger='hover' data-content='" + approvalHtml(pullRequest) + "'>" +
         pullRequest.numApprovals + '</td>',
       pullRequest.rebasedText,
-      pullRequest.state,
+      pullRequest.status,
       pullRequest.needsMyApproval,
       pullRequest.labelHtml,
       '<button class="refresh">Refresh</button>'
@@ -459,10 +459,6 @@
 
     if (pullRequest.iAmOwner && !pullRequest.isRebased) {
       return 'warning';
-    }
-
-    if (pullRequest.state == 'failure') {
-      return 'danger';
     }
 
     return '';
