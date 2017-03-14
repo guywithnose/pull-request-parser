@@ -14,6 +14,12 @@
     language: {
       search: '<div class="col-xs-2"><label class="control-label">Search:</label></div><div class="col-xs-8">_INPUT_</div>'
     },
+    drawCallback: function() {
+      if (dataTable) {
+        var count = dataTable.rows({search:'applied'}).count();
+        $(dataTable.columns(11).header()).html(count + ' Row' + (count !== 1 ? 's' : ''));
+      }
+    },
     columns: [
       {'visible': false},
       null,
