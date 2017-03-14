@@ -4,6 +4,7 @@
   var dataTable = $('#approved-prs').DataTable({
     paging: false,
     info: false,
+    autoWidth: false,
     search: {
       regex: true
     },
