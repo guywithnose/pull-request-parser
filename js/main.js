@@ -29,8 +29,9 @@
     ]
   });
 
-  var GhApi = function(apiUrl, token) {
+  var GhApi = function(apiUrl, token, ignoredBuilds) {
     this.apiUrl = apiUrl;
+    this.ignoredBuilds = ignoredBuilds;
     var ajaxOptions = {
       dataType: 'json',
       cache: false,
@@ -279,7 +280,7 @@
 
   function getReviewsAndParsePullRequest(ghApi, username, sha, pullRequest) {
     ghApi.getReviews(pullRequest.base.repo.owner.login + '/' + pullRequest.base.repo.name, pullRequest.number).then(function(reviews) {
-      parsePullRequest(username, sha, pullRequest, reviews);
+      parsePullRequest(ghApi, username, sha, pullRequest, reviews);
     });
   }
 
@@ -297,14 +298,14 @@
           function(user, pullData, labels, reviews) {
             pullData.pull.labels = labels;
             if (pullData.pull.state === 'open') {
-              parsePullRequest(user.login, pullData.commit.sha, pullData.pull, reviews);
+              parsePullRequest(ghApi, user.login, pullData.commit.sha, pullData.pull, reviews);
             }
           }
       );
     });
   }
 
-  function parsePullRequest(username, headCommit, pullRequest, reviews) {
+  function parsePullRequest(ghApi, username, headCommit, pullRequest, reviews) {
     pullRequest.iAmOwner = pullRequest.user.login == username;
     pullRequest.approvals = approvingComments(pullRequest.comments.concat(pullRequest.review_comments), reviews);
     pullRequest.numApprovals = Object.keys(pullRequest.approvals).length;
@@ -312,7 +313,7 @@
     pullRequest.iHaveApproved = !!pullRequest.approvals[username];
     pullRequest.isRebased = ancestryContains(pullRequest.commits, headCommit);
     pullRequest.rebasedText = pullRequest.isRebased ? 'Y' : 'N';
-    pullRequest.status = getState(pullRequest.statuses);
+    pullRequest.status = getState(pullRequest.statuses, ghApi.ignoredBuilds);
     pullRequest.needsMyApproval = !pullRequest.iHaveApproved && !pullRequest.iAmOwner ? 'Y' : 'N';
     pullRequest.labelHtml = buildLabels(pullRequest.labels);
 
@@ -350,13 +351,17 @@
     return labelHtml;
   }
 
-  function getState(statuses) {
+  function getState(statuses, ignoredBuilds) {
     if (statuses.length == 0) {
       return 'none';
     }
 
     var contexts = {};
     for (var i in statuses) {
+      if (ignoredBuilds.indexOf(statuses[i].context) !== -1) {
+        continue;
+      }
+
       if (!contexts[statuses[i].context]) {
         contexts[statuses[i].context] = {state: '?', url: statuses[i].target_url};
       }
@@ -455,6 +460,10 @@
   }
 
   function rowClass(pullRequest) {
+    if (pullRequest.status.indexOf('">N</a>') !== -1) {
+      return 'danger';
+    }
+
     if (pullRequest.approved && pullRequest.isRebased) {
       return 'success';
     }
@@ -474,13 +483,14 @@
     options = options || {};
 
     var apiUrl = options.apiUrl || 'https://api.github.com';
+    var ignoredBuilds = options.ignoredBuilds || [];
     MIN_APPROVALS = options.minApprovals || MIN_APPROVALS;
 
     var ls = new LS(apiUrl);
     var ghApi;
 
     if (ls.getAccessToken()) {
-      ghApi = new GhApi(apiUrl, ls.getAccessToken());
+      ghApi = new GhApi(apiUrl, ls.getAccessToken(), ignoredBuilds);
       ghApi.getUser().then(function() {
         $('#pickRepo').show();
         $('#pr-data').show();

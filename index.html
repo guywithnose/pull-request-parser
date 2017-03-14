@@ -74,13 +74,15 @@
   <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="js/main.js"></script>
   <script type="text/javascript">
-    var urlMatches = location.href.match(/apiUrl=([^&]*)/);
-    var apiUrl = urlMatches ? urlMatches[1] : 'https://api.github.com';
+    var apiUrlMatches = location.href.match(/apiUrl=([^&]*)/);
+    var apiUrl = apiUrlMatches ? apiUrlMatches[1] : 'https://api.github.com';
+    var ignoredBuildsMatches = location.href.match(/ignoredBuilds=([^&]*)/);
+    var ignoredBuilds = ignoredBuildsMatches ? decodeURIComponent(ignoredBuildsMatches[1]).split(',') : [];
 
     var approvalMatches = location.href.match(/minApprovals=([^&]*)/);
     var minApprovals = approvalMatches ? parseInt(approvalMatches[1]) : 2;
 
-    var pullRequestParser = new PullRequestParser({apiUrl: apiUrl, minApprovals: minApprovals});
+    var pullRequestParser = new PullRequestParser({apiUrl: apiUrl, minApprovals: minApprovals, ignoredBuilds: ignoredBuilds});
   </script>
 </body>
 </html>
