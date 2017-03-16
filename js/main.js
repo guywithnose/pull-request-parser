@@ -280,6 +280,11 @@
 
   function parseAllPullRequests(ghApi, user, baseBranchCommits, pulls) {
     var username = user.login;
+    if (pulls.length === 0) {
+      updateEmptyTableText('No pull requests found');
+      return;
+    }
+
     for (var i in pulls) {
       getReviewsAndParsePullRequest(ghApi, username, baseBranchCommits[pulls[i].base.ref].sha, pulls[i]);
     }
