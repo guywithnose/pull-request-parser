@@ -1,0 +1,17 @@
+_pull_request_parser_zsh_autocomplete() {
+
+  local -a opts
+  opts=("${(@f)$(prp ${words[@]:1:#words[@]-1} --generate-bash-completion)}")
+
+  if [[ "${opts}" == 'fileCompletion' ]]
+  then
+      _files
+      return
+  fi
+
+  _describe 'values' opts
+
+  return
+}
+
+compdef _pull_request_parser_zsh_autocomplete prp

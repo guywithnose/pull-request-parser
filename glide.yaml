@@ -1,0 +1,15 @@
+package: github.com/guywithnose/feedTube
+import:
+- package: github.com/urfave/cli
+- package: github.com/google/go-github
+- package: golang.org/x/oauth2
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: github.com/gregjones/httpcache
+- package: github.com/peterbourgon/diskv
+  version: ^2.0.0
+- package: github.com/stretchr/testify
+  version: ^1.1.4
+  subpackages:
+  - assert
