@@ -94,26 +94,6 @@ func CompleteRepoAdd(c *cli.Context) {
 	fmt.Fprintln(c.App.Writer, strings.Join(suggestionList, "\n"))
 }
 
-func getAllRepos(ctx context.Context, client *github.Client, login string) []*github.Repository {
-	allRepos := make([]*github.Repository, 0, 30)
-	opt := &github.RepositoryListOptions{
-		ListOptions: github.ListOptions{PerPage: 100},
-	}
-	for {
-		repositories, resp, err := client.Repositories.List(ctx, login, opt)
-		if err != nil {
-			return []*github.Repository{}
-		}
-
-		allRepos = append(allRepos, repositories...)
-		if resp.NextPage == 0 {
-			return allRepos
-		}
-
-		opt.ListOptions.Page = resp.NextPage
-	}
-}
-
 func parseRepository(ctx context.Context, client *github.Client, login, name, repoName string, firstArg bool, trackedRepos []config.PrpConfigRepo) *string {
 	fullRepository, _, err := client.Repositories.Get(ctx, login, name)
 	if err != nil {
