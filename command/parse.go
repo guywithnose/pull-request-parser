@@ -79,17 +79,17 @@ func CmdParse(c *cli.Context) error {
 
 	outputs := getBasePrData(ctx, client, user, &profile)
 
-	sort.Sort(outputs)
-
 	filteredOutputs := filterOutputs(outputs, c.String("owner"), c.StringSlice("repo"))
+
+	sort.Sort(filteredOutputs)
 
 	getExtraData(ctx, client, user, c.Bool("need-rebase"), filteredOutputs)
 
 	return printResults(filteredOutputs, c.Bool("verbose"), c.App.Writer)
 }
 
-func filterOutputs(outputs []*prInfo, owner string, repos []string) []*prInfo {
-	filteredOutputs := make([]*prInfo, 0, len(outputs))
+func filterOutputs(outputs []*prInfo, owner string, repos []string) sortablePrs {
+	filteredOutputs := make(sortablePrs, 0, len(outputs))
 	for _, output := range outputs {
 		if owner != "" && output.Owner != owner {
 			continue
