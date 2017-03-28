@@ -50,7 +50,7 @@ var Commands = []cli.Command{
 		BashComplete: command.CompleteParse,
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "owner, user, o",
+				Name:  "user, owner, u",
 				Usage: "Only show pull requests by owner.",
 			},
 			cli.StringSliceFlag{
