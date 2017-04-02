@@ -71,7 +71,7 @@ var Commands = []cli.Command{
 	{
 		Name:    "profile",
 		Aliases: []string{"pr"},
-		Usage:   "Mangae profiles",
+		Usage:   "Manage profiles",
 		Subcommands: []cli.Command{
 			{
 				Name:         "add",
