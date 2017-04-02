@@ -27,7 +27,7 @@ func CmdParse(c *cli.Context) error {
 
 	profile := configData.Profiles[*profileName]
 	ctx := context.Background()
-	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL)
+	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, false)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func CompleteParse(c *cli.Context) {
 	if lastParam != "--user" && lastParam != "--repo" {
 		for _, flag := range c.App.Command("parse").Flags {
 			name := strings.Split(flag.GetName(), ",")[0]
-			if !c.IsSet(name) {
+			if !c.IsSet(name) || name == "repo" {
 				fmt.Fprintf(c.App.Writer, "--%s\n", name)
 			}
 		}
@@ -103,14 +103,30 @@ func CompleteParse(c *cli.Context) {
 		return
 	}
 
+	selectedRepos := c.StringSlice("repo")
 	for _, repo := range profile.TrackedRepos {
-		fmt.Fprintf(c.App.Writer, "%s/%s\n", repo.Owner, repo.Name)
+		fullRepoName := fmt.Sprintf("%s/%s", repo.Owner, repo.Name)
+		if stringSliceContains(fullRepoName, selectedRepos) {
+			continue
+		}
+
+		fmt.Fprintln(c.App.Writer, fullRepoName)
 	}
+}
+
+func stringSliceContains(needle string, haystack []string) bool {
+	for _, straw := range haystack {
+		if needle == straw {
+			return true
+		}
+	}
+
+	return false
 }
 
 func handleUserCompletion(profile *config.PrpConfigProfile, writer io.Writer) {
 	ctx := context.Background()
-	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL)
+	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, true)
 	if err != nil {
 		return
 	}

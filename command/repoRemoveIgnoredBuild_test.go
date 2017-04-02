@@ -61,7 +61,7 @@ func TestCompleteRepoRemoveIgnoredBuildRepos(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoRemoveIgnoredBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "foo/bar\nown/rep\n")
+	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
 }
 
 func TestCompleteRepoRemoveIgnoredBuildInvalidRepo(t *testing.T) {
@@ -72,7 +72,7 @@ func TestCompleteRepoRemoveIgnoredBuildInvalidRepo(t *testing.T) {
 	os.Args = []string{"repo", "remove-ignored-build", "foo/bar", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoRemoveIgnoredBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoRemoveIgnoredBuildIgnoredBuilds(t *testing.T) {
@@ -83,7 +83,7 @@ func TestCompleteRepoRemoveIgnoredBuildIgnoredBuilds(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "own/rep", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoRemoveIgnoredBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "goo\n")
+	assert.Equal(t, writer.String(), "goo\n")
 }
 
 func TestCompleteRepoRemoveIgnoredBuildDone(t *testing.T) {
@@ -94,7 +94,7 @@ func TestCompleteRepoRemoveIgnoredBuildDone(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "own/rep", "goo", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoRemoveIgnoredBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoRemoveIgnoredBuildNoConfig(t *testing.T) {
@@ -102,5 +102,5 @@ func TestCompleteRepoRemoveIgnoredBuildNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoRemoveIgnoredBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }

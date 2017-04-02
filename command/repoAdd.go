@@ -55,7 +55,7 @@ func CompleteRepoAdd(c *cli.Context) {
 	token := profile.Token
 
 	ctx := context.Background()
-	client, err := getGithubClient(ctx, &token, &profile.APIURL)
+	client, err := getGithubClient(ctx, &token, &profile.APIURL, true)
 	if err != nil {
 		return
 	}

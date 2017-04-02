@@ -60,7 +60,7 @@ func TestCompleteRepoIgnoreBuildRepos(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "foo/bar\nown/rep\n")
+	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
 }
 
 func TestCompleteRepoIgnoreBuildIgnoredBuilds(t *testing.T) {
@@ -71,7 +71,7 @@ func TestCompleteRepoIgnoreBuildIgnoredBuilds(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "own/rep", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "goo\n")
+	assert.Equal(t, writer.String(), "goo\n")
 }
 
 func TestCompleteRepoIgnoreBuildDone(t *testing.T) {
@@ -82,7 +82,7 @@ func TestCompleteRepoIgnoreBuildDone(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "own/rep", "goo", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoIgnoreBuildNoConfig(t *testing.T) {
@@ -90,5 +90,5 @@ func TestCompleteRepoIgnoreBuildNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }

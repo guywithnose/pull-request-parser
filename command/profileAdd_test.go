@@ -4,7 +4,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/guywithnose/pull-request-parser/config"
@@ -33,9 +32,8 @@ func TestCmdProfileAdd(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(*modifiedConfigData, expectedConfigFile) {
-		t.Fatalf("File was \n%v\n, expected \n%v\n", *modifiedConfigData, expectedConfigFile)
-	}
+
+	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
 
 func TestCmdProfileAddUsage(t *testing.T) {
@@ -91,7 +89,7 @@ func TestCompleteProfileAddToken(t *testing.T) {
 	os.Args = []string{"profile", "add", "--token", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "abc\n")
+	assert.Equal(t, writer.String(), "abc\n")
 }
 
 func TestCompleteProfileAddFlags(t *testing.T) {
@@ -108,7 +106,7 @@ func TestCompleteProfileAddFlags(t *testing.T) {
 		},
 	}
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "--token\n--apiUrl\n")
+	assert.Equal(t, writer.String(), "--token\n--apiUrl\n")
 }
 
 func TestCompleteProfileAddApiUrl(t *testing.T) {
@@ -122,7 +120,7 @@ func TestCompleteProfileAddApiUrl(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer := appWithTestWriter()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "http\\://api.com\n")
+	assert.Equal(t, writer.String(), "http\\://api.com\n")
 }
 
 func TestCompleteProfileAddNoConfig(t *testing.T) {
@@ -130,5 +128,5 @@ func TestCompleteProfileAddNoConfig(t *testing.T) {
 	os.Args = []string{"profile", "add", "--apiUrl", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }

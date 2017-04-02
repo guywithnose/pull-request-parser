@@ -3,7 +3,6 @@ package command
 import (
 	"flag"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	"github.com/guywithnose/pull-request-parser/config"
@@ -31,9 +30,8 @@ func TestCmdProfileUpdate(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(*modifiedConfigData, expectedConfigFile) {
-		t.Fatalf("File was \n%v\n, expected \n%v\n", *modifiedConfigData, expectedConfigFile)
-	}
+
+	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
 
 func TestCmdProfileUpdateUsage(t *testing.T) {

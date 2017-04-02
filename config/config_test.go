@@ -162,6 +162,7 @@ func getTestingConfig() *PrpConfig {
 					{
 						Owner:         "own",
 						Name:          "rep",
+						LocalPath:     "/foo",
 						IgnoredBuilds: []string{"broken"},
 					},
 				},
@@ -178,6 +179,7 @@ func getTestingConfigJSONString() string {
         {
           "owner": "own",
           "name": "rep",
+          "localPath": "/foo",
           "ignoredBuilds": [
             "broken"
           ]

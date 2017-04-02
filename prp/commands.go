@@ -7,6 +7,7 @@ import (
 
 	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/guywithnose/pull-request-parser/config"
+	"github.com/guywithnose/pull-request-parser/execWrapper"
 	"github.com/urfave/cli"
 )
 
@@ -122,6 +123,34 @@ var Commands = []cli.Command{
 				Usage:        "Remove a build from the list of ignored builds.",
 				Action:       command.CmdRepoRemoveIgnoredBuild,
 				BashComplete: command.CompleteRepoRemoveIgnoredBuild,
+			},
+			{
+				Name:         "set-path",
+				Aliases:      []string{"sp"},
+				Usage:        "Set the path of the local clone.",
+				Action:       command.CmdRepoSetPath,
+				BashComplete: command.CompleteRepoSetPath,
+			},
+		},
+	},
+	{
+		Name:         "auto-rebase",
+		Aliases:      []string{"a", "auto"},
+		Usage:        "Automatically rebase your pull requests with local path set",
+		Action:       command.CmdAutoRebase(execWrapper.Wrapper{}),
+		BashComplete: command.CompleteAutoRebase,
+		Flags: []cli.Flag{
+			cli.StringSliceFlag{
+				Name:  "repo, r",
+				Usage: "Only rebase these repos.",
+			},
+			cli.IntFlag{
+				Name:  "pull-request-number, prNum, n",
+				Usage: "A specific pull request number",
+			},
+			cli.BoolFlag{
+				Name:  "verbose, v",
+				Usage: "Output more info",
 			},
 		},
 	},

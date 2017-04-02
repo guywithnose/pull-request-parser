@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-github/github"
@@ -77,10 +78,11 @@ func appWithTestWriter() (*cli.App, *bytes.Buffer) {
 	return app, writer
 }
 
-func assertOutput(t *testing.T, writer *bytes.Buffer, expectedOutput string) {
-	if writer.String() != expectedOutput {
-		t.Fatalf("Output was \n%s\n, expected \n%s\n", writer.String(), expectedOutput)
-	}
+func appWithTestErrorWriter() (*cli.App, *bytes.Buffer) {
+	app := cli.NewApp()
+	writer := new(bytes.Buffer)
+	app.ErrWriter = writer
+	return app, writer
 }
 
 func getBaseFlagSet(configFileName string) *flag.FlagSet {
@@ -93,10 +95,7 @@ func getBaseFlagSet(configFileName string) *flag.FlagSet {
 func assertConfigFile(t *testing.T, expectedConfigFile config.PrpConfig, configFileName string) {
 	modifiedConfigData, err := config.LoadConfigFromFile(configFileName)
 	assert.Nil(t, err)
-
-	if !reflect.DeepEqual(*modifiedConfigData, expectedConfigFile) {
-		t.Fatalf("File was \n%v\n, expected \n%v\n", *modifiedConfigData, expectedConfigFile)
-	}
+	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
 
 func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
@@ -109,16 +108,255 @@ func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
 	return conf, configFileName
 }
 
+func getConfigWithAPIURLAndPath(t *testing.T, url, path string) (config.PrpConfig, string) {
+	conf, configFileName := getConfigWithAPIURL(t, url)
+	profile := conf.Profiles["foo"]
+	profile.TrackedRepos[1].LocalPath = path
+	conf.Profiles["foo"] = profile
+	assert.Nil(t, config.WriteConfig(configFileName, &conf))
+	return conf, configFileName
+}
+
 func newUser(login string) *github.User {
 	return &github.User{Login: &login}
 }
 
-func handleUserRequest(r *http.Request) *string {
+func handleUserRequest(r *http.Request, owner string) *string {
 	if r.URL.String() == "/user" {
-		bytes, _ := json.Marshal(newUser("own"))
+		bytes, _ := json.Marshal(newUser(owner))
 		response := string(bytes)
 		return &response
 	}
 
 	return nil
+}
+
+func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
+	if r.URL.String() == "/repos/own/rep/pulls?per_page=100" {
+		bytes, _ := json.Marshal([]*github.PullRequest{
+			newPullRequest(2, "Really long Pull Request Title", "guy2", "label", "ref2", "sha2", "baseLabel2", "baseRef2"),
+		})
+		w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="next", <%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/pulls?page=2&per_page=100" {
+		bytes, _ := json.Marshal([]*github.PullRequest{
+			newPullRequest(1, "prOne", "guy", "label", "ref1", "sha1", "baseLabel1", "baseRef1"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/pulls?per_page=100" {
+		bytes, _ := json.Marshal([]*github.PullRequest{
+			newPullRequest(1, "fooPrOne", "fooGuy", "fooLabel", "fooRef1", "fooSha1", "fooBaseLabel1", "fooBaseRef1"),
+			newPullRequest(2, "fooPrTwo", "fooGuy2", "fooLabel", "fooRef2", "fooSha2", "fooBaseLabel2", "fooBaseRef2"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
+	if r.URL.String() == "/repos/own/rep/issues/1/comments?per_page=100" {
+		bytes, _ := json.Marshal([]*github.IssueComment{
+			newComment("foo", "guy"),
+		})
+		w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="next", <%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/issues/1/comments?page=2&per_page=100" {
+		bytes, _ := json.Marshal([]*github.IssueComment{
+			newComment(":thumbsup:", "own"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/issues/1/comments?per_page=100" {
+		bytes, _ := json.Marshal([]*github.IssueComment{
+			newComment(":+1:", "guy"),
+			newComment(":thumbsup:", "guy"),
+			newComment("LGTM", "guy"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/issues/2/comments?per_page=100" {
+		bytes, _ := json.Marshal([]*github.IssueComment{
+			newComment(":+1:", "guy"),
+			newComment("LGTM", "guy"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/issues/2/comments?per_page=100" {
+		bytes, _ := json.Marshal([]*github.IssueComment{
+			newComment("foo", "guy"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func handleLabelRequests(r *http.Request) *string {
+	if r.URL.String() == "/repos/own/rep/issues/1/labels" {
+		bytes, _ := json.Marshal([]*github.Label{
+			newLabel("label1"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/issues/1/labels" {
+		bytes, _ := json.Marshal([]*github.Label{
+			newLabel("label2"),
+			newLabel("label3"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/issues/2/labels" {
+		bytes, _ := json.Marshal([]*github.Label{})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/issues/2/labels" {
+		bytes, _ := json.Marshal([]*github.Label{
+			newLabel("label4"),
+			newLabel("label5"),
+			newLabel("really-long-label"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func handleStatusRequests(r *http.Request) *string {
+	if r.URL.String() == "/repos/own/rep/commits/sha1/statuses" {
+		bytes, _ := json.Marshal([]*github.RepoStatus{
+			newStatus("build1", "success"),
+			newStatus("build1", "pending"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/commits/fooSha1/statuses" {
+		bytes, _ := json.Marshal([]*github.RepoStatus{
+			newStatus("build1", "pending"),
+			newStatus("build2", "success"),
+			newStatus("build2", "pending"),
+			newStatus("goo", "failure"),
+			newStatus("goo", "pending"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/commits/sha2/statuses" {
+		bytes, _ := json.Marshal([]*github.RepoStatus{
+			newStatus("build1", "failure"),
+			newStatus("build1", "pending"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/commits/fooSha2/statuses" {
+		bytes, _ := json.Marshal([]*github.RepoStatus{})
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func handleCommitsComparisonRequests(r *http.Request) *string {
+	if r.URL.String() == "/repos/own/rep/compare/label...baseLabel1" {
+		bytes, _ := json.Marshal(newCommitsComparison(1))
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/compare/fooLabel...fooBaseLabel1" {
+		bytes, _ := json.Marshal(newCommitsComparison(0))
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/compare/label...baseLabel2" {
+		bytes, _ := json.Marshal(newCommitsComparison(0))
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/compare/fooLabel...fooBaseLabel2" {
+		bytes, _ := json.Marshal(newCommitsComparison(1))
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func newPullRequest(number int, title, owner, label, ref, sha, baseLabel, baseRef string) *github.PullRequest {
+	headSSHURL := fmt.Sprintf("%sSSHURL", label)
+	baseSSHURL := fmt.Sprintf("%sSSHURL", baseLabel)
+	return &github.PullRequest{
+		Number: &number,
+		Title:  &title,
+		Head: &github.PullRequestBranch{
+			Label: &label,
+			Ref:   &ref,
+			SHA:   &sha,
+			User:  &github.User{Login: &owner},
+			Repo:  &github.Repository{SSHURL: &headSSHURL},
+		},
+		Base: &github.PullRequestBranch{
+			Label: &baseLabel,
+			Ref:   &baseRef,
+			Repo:  &github.Repository{SSHURL: &baseSSHURL},
+		},
+	}
+}
+
+func newCommitsComparison(aheadBy int) *github.CommitsComparison {
+	return &github.CommitsComparison{
+		AheadBy: &aheadBy,
+	}
+}
+
+func newComment(body, user string) *github.IssueComment {
+	return &github.IssueComment{
+		Body: &body,
+		User: newUser(user),
+	}
+}
+
+func newLabel(name string) *github.Label {
+	return &github.Label{
+		Name: &name,
+	}
+}
+
+func newStatus(context, state string) *github.RepoStatus {
+	return &github.RepoStatus{
+		Context: &context,
+		State:   &state,
+	}
 }

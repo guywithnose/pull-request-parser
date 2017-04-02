@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-github/github"
@@ -30,9 +29,7 @@ func TestCmdRepoAdd(t *testing.T) {
 
 	expectedConfigFile, configFileName := getConfigWithTwoRepos(t)
 	defer removeFile(t, configFileName)
-	if !reflect.DeepEqual(*modifiedConfigData, expectedConfigFile) {
-		t.Fatalf("File was \n%v\n, expected \n%v\n", *modifiedConfigData, expectedConfigFile)
-	}
+	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
 
 func TestCmdRepoAddNoConfig(t *testing.T) {
@@ -69,7 +66,7 @@ func TestCompleteRepoAddOwner(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "source\n")
+	assert.Equal(t, writer.String(), "source\n")
 }
 
 func TestCompleteRepoAddName(t *testing.T) {
@@ -82,7 +79,7 @@ func TestCompleteRepoAddName(t *testing.T) {
 	os.Args = []string{"repo", "add", "source", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "rep\n")
+	assert.Equal(t, writer.String(), "rep\n")
 }
 
 func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
@@ -95,7 +92,7 @@ func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
 	os.Args = []string{"repo", "add", "foo", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "\n")
+	assert.Equal(t, writer.String(), "\n")
 }
 
 func TestCompleteRepoAddDone(t *testing.T) {
@@ -108,7 +105,7 @@ func TestCompleteRepoAddDone(t *testing.T) {
 	os.Args = []string{"repo", "add", "foo", "bar", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoAddNoConfig(t *testing.T) {
@@ -119,7 +116,7 @@ func TestCompleteRepoAddNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoAddUserFailure(t *testing.T) {
@@ -131,7 +128,7 @@ func TestCompleteRepoAddUserFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func TestCompleteRepoAddReposFailure(t *testing.T) {
@@ -143,7 +140,7 @@ func TestCompleteRepoAddReposFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "\n")
+	assert.Equal(t, writer.String(), "\n")
 }
 
 func TestCompleteRepoAddRepoFailure(t *testing.T) {
@@ -155,7 +152,7 @@ func TestCompleteRepoAddRepoFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "\n")
+	assert.Equal(t, writer.String(), "\n")
 }
 
 func TestCompleteRepoAddBadApiUrl(t *testing.T) {
@@ -165,7 +162,7 @@ func TestCompleteRepoAddBadApiUrl(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer := appWithTestWriter()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assertOutput(t, writer, "")
+	assert.Equal(t, writer.String(), "")
 }
 
 func getRepoAddTestServer(failureURL string) *httptest.Server {
@@ -176,7 +173,7 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 			return
 		}
 
-		response := handleUserRequest(r)
+		response := handleUserRequest(r, "own")
 		if response != nil {
 			fmt.Fprint(w, *response)
 			return

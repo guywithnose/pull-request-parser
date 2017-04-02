@@ -21,6 +21,7 @@ type PrpConfigProfile struct {
 type PrpConfigRepo struct {
 	Owner         string   `json:"owner,omitempty"`
 	Name          string   `json:"name,omitempty"`
+	LocalPath     string   `json:"localPath,omitempty"`
 	IgnoredBuilds []string `json:"ignoredBuilds,omitempty"`
 }
 

@@ -16,8 +16,7 @@ import (
 )
 
 type prInfo struct {
-	RepoName        string
-	RepoOwner       string
+	Repo            *config.PrpConfigRepo
 	PullRequestID   int
 	Title           string
 	Owner           string
@@ -26,6 +25,8 @@ type prInfo struct {
 	HeadLabel       string
 	BaseLabel       string
 	SHA             string
+	BaseSSHURL      string
+	HeadSSHURL      string
 	Approvals       int
 	Rebased         bool
 	BuildInfo       map[string]bool
@@ -42,25 +43,27 @@ func (s sortablePrs) Len() int {
 }
 
 func (s sortablePrs) Less(i, j int) bool {
-	if s[i].RepoName == s[j].RepoName {
+	if s[i].Repo.Name == s[j].Repo.Name {
 		return s[i].PullRequestID < s[j].PullRequestID
 	}
 
-	return s[i].RepoName < s[j].RepoName
+	return s[i].Repo.Name < s[j].Repo.Name
 }
 
 func (s sortablePrs) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func getGithubClient(ctx context.Context, token, apiURL *string) (*github.Client, error) {
+func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) (*github.Client, error) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *token})
 	tokenClient := oauth2.NewClient(ctx, tokenSource)
 
-	cache := diskcache.New(fmt.Sprintf("%s/prpCache", os.TempDir()))
-	transport := httpcache.NewTransport(cache)
-	transport.Transport = tokenClient.Transport
-	tokenClient.Transport = transport
+	if useCache {
+		cache := diskcache.New(fmt.Sprintf("%s/prpCache", os.TempDir()))
+		transport := httpcache.NewTransport(cache)
+		transport.Transport = tokenClient.Transport
+		tokenClient.Transport = transport
+	}
 
 	client := github.NewClient(tokenClient)
 	if apiURL != nil && *apiURL != "" {
@@ -104,7 +107,7 @@ func handleComments(ctx context.Context, client *github.Client, user *github.Use
 
 	allComments := []*github.IssueComment{}
 	for {
-		comments, resp, err := client.Issues.ListComments(ctx, output.RepoOwner, output.RepoName, output.PullRequestID, opt)
+		comments, resp, err := client.Issues.ListComments(ctx, output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
 		if err != nil {
 			return
 		}
@@ -128,7 +131,7 @@ func handleComments(ctx context.Context, client *github.Client, user *github.Use
 }
 
 func handleCommitComparision(ctx context.Context, client *github.Client, output *prInfo, filterRebased bool) {
-	commitComparison, _, err := client.Repositories.CompareCommits(ctx, output.RepoOwner, output.RepoName, output.HeadLabel, output.BaseLabel)
+	commitComparison, _, err := client.Repositories.CompareCommits(ctx, output.Repo.Owner, output.Repo.Name, output.HeadLabel, output.BaseLabel)
 	if err != nil {
 		return
 	}
@@ -140,7 +143,7 @@ func handleCommitComparision(ctx context.Context, client *github.Client, output 
 }
 
 func handleLabels(ctx context.Context, client *github.Client, output *prInfo) {
-	labels, _, err := client.Issues.ListLabelsByIssue(ctx, output.RepoOwner, output.RepoName, output.PullRequestID, nil)
+	labels, _, err := client.Issues.ListLabelsByIssue(ctx, output.Repo.Owner, output.Repo.Name, output.PullRequestID, nil)
 	if err != nil {
 		return
 	}
@@ -151,7 +154,7 @@ func handleLabels(ctx context.Context, client *github.Client, output *prInfo) {
 }
 
 func handleStatuses(ctx context.Context, client *github.Client, output *prInfo) {
-	statuses, _, err := client.Repositories.ListStatuses(ctx, output.RepoOwner, output.RepoName, output.SHA, nil)
+	statuses, _, err := client.Repositories.ListStatuses(ctx, output.Repo.Owner, output.Repo.Name, output.SHA, nil)
 	if err != nil {
 		return
 	}
@@ -190,8 +193,7 @@ func getBasePrData(ctx context.Context, client *github.Client, user *github.User
 			for _, pr := range repoPrs {
 				wg.Add(1)
 				outputChannel <- &prInfo{
-					RepoOwner:       repo.Owner,
-					RepoName:        repo.Name,
+					Repo:            &repo,
 					PullRequestID:   pr.GetNumber(),
 					Title:           pr.GetTitle(),
 					Owner:           pr.Head.User.GetLogin(),
@@ -200,6 +202,8 @@ func getBasePrData(ctx context.Context, client *github.Client, user *github.User
 					HeadLabel:       pr.Head.GetLabel(),
 					BaseLabel:       pr.Base.GetLabel(),
 					SHA:             pr.Head.GetSHA(),
+					BaseSSHURL:      pr.Base.Repo.GetSSHURL(),
+					HeadSSHURL:      pr.Head.Repo.GetSSHURL(),
 					BuildInfo:       map[string]bool{},
 					NeedsMyApproval: user.GetLogin() != pr.Head.User.GetLogin(),
 					IgnoredBuilds:   repo.IgnoredBuilds,

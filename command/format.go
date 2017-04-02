@@ -68,7 +68,7 @@ func printResults(outputs []*prInfo, verbose bool, w io.Writer) error {
 			fmt.Fprintf(
 				tabW,
 				"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				po.RepoName,
+				po.Repo.Name,
 				po.PullRequestID,
 				title,
 				po.Owner,
@@ -124,7 +124,7 @@ func filterOutputs(outputs []*prInfo, owner string, repos []string) sortablePrs 
 		if len(repos) != 0 {
 			matched := false
 			for _, repoName := range repos {
-				if repoName == fmt.Sprintf("%s/%s", output.RepoOwner, output.RepoName) {
+				if repoName == fmt.Sprintf("%s/%s", output.Repo.Owner, output.Repo.Name) {
 					matched = true
 				}
 			}
