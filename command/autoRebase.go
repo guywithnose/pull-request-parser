@@ -195,7 +195,6 @@ func fetchRemote(path, remoteName string, verboseWriter io.Writer, cmdWrapper ex
 
 func wrapExitError(err error, extra string) error {
 	if exitErr, ok := err.(*exec.ExitError); ok {
-		fmt.Println(string(exitErr.Stderr))
 		return fmt.Errorf("%s\n%s", extra, string(exitErr.Stderr))
 	}
 
