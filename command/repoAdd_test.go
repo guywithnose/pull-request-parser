@@ -186,7 +186,15 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 				newRepository("own", "foo", false),
 			}
 			bytes, _ := json.Marshal(repos)
-			w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/users/own/repos?per_page=100&page=2>; rel="next", <%s/mockApi/users/own/repos?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
+			w.Header().Set(
+				"Link",
+				fmt.Sprintf(
+					`<%s/mockApi/users/own/repos?per_page=100&page=2>; rel="next", `+
+						`<%s/mockApi/users/own/repos?per_page=100&page=2>; rel="last"`,
+					server.URL,
+					server.URL,
+				),
+			)
 			fmt.Fprint(w, string(bytes))
 			return
 		}

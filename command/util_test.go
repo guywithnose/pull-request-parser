@@ -131,7 +131,15 @@ func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *h
 		bytes, _ := json.Marshal([]*github.PullRequest{
 			newPullRequest(1, "prOne", "guy", "label", "ref1", "sha1", "baseLabel1", "baseRef1"),
 		})
-		w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="next", <%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
+		w.Header().Set(
+			"Link",
+			fmt.Sprintf(
+				`<%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="next", `+
+					`<%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="last"`,
+				server.URL,
+				server.URL,
+			),
+		)
 		response := string(bytes)
 		return &response
 	}
@@ -161,7 +169,15 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 		bytes, _ := json.Marshal([]*github.IssueComment{
 			newComment("foo", "guy"),
 		})
-		w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="next", <%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
+		w.Header().Set(
+			"Link",
+			fmt.Sprintf(
+				`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="next", `+
+					`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="last"`,
+				server.URL,
+				server.URL,
+			),
+		)
 		response := string(bytes)
 		return &response
 	}

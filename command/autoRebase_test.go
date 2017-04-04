@@ -677,7 +677,14 @@ func getLocalChangesVerboseOutput() []string {
 	}
 }
 
-func runBaseCommand(t *testing.T, failureURL, repoDir string, commandBuilder *execWrapper.TestCommandBuilder, verbose, expectedError bool) (*httptest.Server, *bytes.Buffer) {
+func runBaseCommand(
+	t *testing.T,
+	failureURL,
+	repoDir string,
+	commandBuilder *execWrapper.TestCommandBuilder,
+	verbose,
+	expectedError bool,
+) (*httptest.Server, *bytes.Buffer) {
 	ts := getAutoRebaseTestServer(failureURL)
 	assert.Nil(t, os.MkdirAll(fmt.Sprintf("%s/.git", repoDir), 0777))
 	_, configFileName := getConfigWithAPIURLAndPath(t, ts.URL, repoDir)

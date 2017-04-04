@@ -179,7 +179,16 @@ func rebasePullRequest(profile *config.PrpConfigProfile, output *prInfo, errorWr
 	return handleRebase(path, ownedRemote, upstreamRemote, output.Branch, output.TargetBranch, tempBranch, verboseWriter, cmdWrapper)
 }
 
-func handleRebase(path, ownedRemote, upstreamRemote, branch, targetBranch, tempBranch string, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) error {
+func handleRebase(
+	path,
+	ownedRemote,
+	upstreamRemote,
+	branch,
+	targetBranch,
+	tempBranch string,
+	verboseWriter io.Writer,
+	cmdWrapper execWrapper.CommandBuilder,
+) error {
 	myRemoteBranch := fmt.Sprintf("%s/%s", ownedRemote, branch)
 	fmt.Fprintf(verboseWriter, "Resetting code to %s\n", myRemoteBranch)
 	err := runCommand(path, cmdWrapper, "git", "reset", "--hard", myRemoteBranch)
@@ -245,7 +254,12 @@ func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper
 	return currentBranchName, tempBranch, nil
 }
 
-func getRepoData(profile *config.PrpConfigProfile, output *prInfo, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) (string, string, string, bool, error) {
+func getRepoData(
+	profile *config.PrpConfigProfile,
+	output *prInfo,
+	verboseWriter io.Writer,
+	cmdWrapper execWrapper.CommandBuilder,
+) (string, string, string, bool, error) {
 	fmt.Fprintln(verboseWriter, "Requesting repo data from config")
 	if output.Repo.LocalPath == "" {
 		return "", "", "", false, errors.New("Path was not set for this repo")
