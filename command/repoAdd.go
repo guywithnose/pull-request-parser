@@ -54,18 +54,17 @@ func CompleteRepoAdd(c *cli.Context) {
 	profile := configData.Profiles[*profileName]
 	token := profile.Token
 
-	ctx := context.Background()
-	client, err := getGithubClient(ctx, &token, &profile.APIURL, true)
+	client, err := getGithubClient(&token, &profile.APIURL, true)
 	if err != nil {
 		return
 	}
 
-	user, _, err := client.Users.Get(ctx, "")
+	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
 		return
 	}
 
-	allRepos := getAllRepos(ctx, client, *user.Login)
+	allRepos := getAllRepos(client, *user.Login)
 
 	suggestionList := []string{}
 	suggestionChan := make(chan *string)
@@ -75,7 +74,7 @@ func CompleteRepoAdd(c *cli.Context) {
 
 			login := *repo.Owner.Login
 			name := *repo.Name
-			suggestionChan <- parseRepository(ctx, client, login, name, c.Args().Get(0), *repo.Fork, firstArg, profile.TrackedRepos)
+			suggestionChan <- parseRepository(client, login, name, c.Args().Get(0), *repo.Fork, firstArg, profile.TrackedRepos)
 		}(repo)
 	}
 
@@ -91,16 +90,7 @@ func CompleteRepoAdd(c *cli.Context) {
 	fmt.Fprintln(c.App.Writer, strings.Join(suggestionList, "\n"))
 }
 
-func parseRepository(
-	ctx context.Context,
-	client *github.Client,
-	login,
-	name,
-	ownerParam string,
-	isFork,
-	firstArg bool,
-	trackedRepos []config.PrpConfigRepo,
-) *string {
+func parseRepository(client *github.Client, login, name, ownerParam string, isFork, firstArg bool, trackedRepos []config.PrpConfigRepo) *string {
 	if !isFork {
 		if firstArg {
 			return &login
@@ -111,7 +101,7 @@ func parseRepository(
 		return nil
 	}
 
-	fullRepository, _, err := client.Repositories.Get(ctx, login, name)
+	fullRepository, _, err := client.Repositories.Get(context.Background(), login, name)
 	if err != nil {
 		return nil
 	}

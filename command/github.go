@@ -37,9 +37,9 @@ type prInfo struct {
 	IgnoredBuilds   []string
 }
 
-func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) (*github.Client, error) {
+func getGithubClient(token, apiURL *string, useCache bool) (*github.Client, error) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *token})
-	tokenClient := oauth2.NewClient(ctx, tokenSource)
+	tokenClient := oauth2.NewClient(context.Background(), tokenSource)
 
 	if useCache {
 		cache := diskcache.New(fmt.Sprintf("%s/prpCache", os.TempDir()))
@@ -61,7 +61,7 @@ func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) 
 	return client, nil
 }
 
-func getRepoPullRequests(ctx context.Context, client *github.Client, owner, name string) (chan *github.PullRequest, chan error) {
+func getRepoPullRequests(client *github.Client, owner, name string) (chan *github.PullRequest, chan error) {
 	opt := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
@@ -70,7 +70,7 @@ func getRepoPullRequests(ctx context.Context, client *github.Client, owner, name
 	errors := make(chan error)
 	go func() {
 		for {
-			pullRequests, resp, err := client.PullRequests.List(ctx, owner, name, opt)
+			pullRequests, resp, err := client.PullRequests.List(context.Background(), owner, name, opt)
 			if err != nil {
 				errors <- err
 				close(errors)
@@ -95,7 +95,7 @@ func getRepoPullRequests(ctx context.Context, client *github.Client, owner, name
 	return allPrs, errors
 }
 
-func handleComments(ctx context.Context, client *github.Client, user *github.User, output *prInfo) {
+func handleComments(client *github.Client, user *github.User, output *prInfo) {
 	//TODO Also look at the new review comments
 	opt := &github.IssueListCommentsOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
@@ -103,7 +103,7 @@ func handleComments(ctx context.Context, client *github.Client, user *github.Use
 
 	allComments := []*github.IssueComment{}
 	for {
-		comments, resp, err := client.Issues.ListComments(ctx, output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
+		comments, resp, err := client.Issues.ListComments(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
 		if err != nil {
 			return
 		}
@@ -126,8 +126,8 @@ func handleComments(ctx context.Context, client *github.Client, user *github.Use
 	}
 }
 
-func handleCommitComparision(ctx context.Context, client *github.Client, output *prInfo, filterRebased bool) {
-	commitComparison, _, err := client.Repositories.CompareCommits(ctx, output.Repo.Owner, output.Repo.Name, output.HeadLabel, output.BaseLabel)
+func handleCommitComparision(client *github.Client, output *prInfo, filterRebased bool) {
+	commitComparison, _, err := client.Repositories.CompareCommits(context.Background(), output.Repo.Owner, output.Repo.Name, output.HeadLabel, output.BaseLabel)
 	if err != nil {
 		return
 	}
@@ -138,8 +138,8 @@ func handleCommitComparision(ctx context.Context, client *github.Client, output 
 	}
 }
 
-func handleLabels(ctx context.Context, client *github.Client, output *prInfo) {
-	labels, _, err := client.Issues.ListLabelsByIssue(ctx, output.Repo.Owner, output.Repo.Name, output.PullRequestID, nil)
+func handleLabels(client *github.Client, output *prInfo) {
+	labels, _, err := client.Issues.ListLabelsByIssue(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, nil)
 	if err != nil {
 		return
 	}
@@ -149,8 +149,8 @@ func handleLabels(ctx context.Context, client *github.Client, output *prInfo) {
 	}
 }
 
-func handleStatuses(ctx context.Context, client *github.Client, output *prInfo) {
-	statuses, _, err := client.Repositories.ListStatuses(ctx, output.Repo.Owner, output.Repo.Name, output.SHA, nil)
+func handleStatuses(client *github.Client, output *prInfo) {
+	statuses, _, err := client.Repositories.ListStatuses(context.Background(), output.Repo.Owner, output.Repo.Name, output.SHA, nil)
 	if err != nil {
 		return
 	}
@@ -173,14 +173,14 @@ statusFor:
 	}
 }
 
-func getBasePrData(ctx context.Context, client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) chan *prInfo {
+func getBasePrData(client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) chan *prInfo {
 	outputChannel := make(chan *prInfo, 10)
 	go func() {
 		wg := sync.WaitGroup{}
 		for _, repo := range profile.TrackedRepos {
 			wg.Add(1)
 			go func(repo config.PrpConfigRepo) {
-				repoPrs, errors := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
+				repoPrs, errors := getRepoPullRequests(client, repo.Owner, repo.Name)
 				go func() {
 					for {
 						err := <-errors
@@ -220,13 +220,13 @@ func getBasePrData(ctx context.Context, client *github.Client, user *github.User
 	return outputChannel
 }
 
-func getAllRepos(ctx context.Context, client *github.Client, login string) []*github.Repository {
+func getAllRepos(client *github.Client, login string) []*github.Repository {
 	allRepos := make([]*github.Repository, 0, 30)
 	opt := &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 	for {
-		repositories, resp, err := client.Repositories.List(ctx, login, opt)
+		repositories, resp, err := client.Repositories.List(context.Background(), login, opt)
 		if err != nil {
 			return []*github.Repository{}
 		}

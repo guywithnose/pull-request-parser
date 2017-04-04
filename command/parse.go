@@ -26,18 +26,17 @@ func CmdParse(c *cli.Context) error {
 	}
 
 	profile := configData.Profiles[*profileName]
-	ctx := context.Background()
-	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, false)
+	client, err := getGithubClient(&profile.Token, &profile.APIURL, false)
 	if err != nil {
 		return err
 	}
 
-	user, _, err := client.Users.Get(ctx, "")
+	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
 		return err
 	}
 
-	outputs := getBasePrData(ctx, client, user, &profile, c.App.ErrWriter)
+	outputs := getBasePrData(client, user, &profile, c.App.ErrWriter)
 
 	results := make(chan *prInfo)
 	go func() {
@@ -49,7 +48,7 @@ func CmdParse(c *cli.Context) error {
 
 			wg.Add(1)
 			go func(output *prInfo) {
-				getExtraData(ctx, client, user, c.Bool("need-rebase"), output)
+				getExtraData(client, user, c.Bool("need-rebase"), output)
 				results <- output
 				wg.Done()
 			}(output)
@@ -62,29 +61,29 @@ func CmdParse(c *cli.Context) error {
 	return printResults(results, c.Bool("verbose"), c.App.Writer)
 }
 
-func getExtraData(ctx context.Context, client *github.Client, user *github.User, filterRebased bool, output *prInfo) {
+func getExtraData(client *github.Client, user *github.User, filterRebased bool, output *prInfo) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(output *prInfo) {
-		handleCommitComparision(ctx, client, output, filterRebased)
+		handleCommitComparision(client, output, filterRebased)
 		wg.Done()
 	}(output)
 
 	wg.Add(1)
 	go func(output *prInfo) {
-		handleComments(ctx, client, user, output)
+		handleComments(client, user, output)
 		wg.Done()
 	}(output)
 
 	wg.Add(1)
 	go func(output *prInfo) {
-		handleLabels(ctx, client, output)
+		handleLabels(client, output)
 		wg.Done()
 	}(output)
 
 	wg.Add(1)
 	go func(output *prInfo) {
-		handleStatuses(ctx, client, output)
+		handleStatuses(client, output)
 		wg.Done()
 	}(output)
 
@@ -127,8 +126,7 @@ func CompleteParse(c *cli.Context) {
 }
 
 func handleUserCompletion(profile *config.PrpConfigProfile, writer, errWriter io.Writer) {
-	ctx := context.Background()
-	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, true)
+	client, err := getGithubClient(&profile.Token, &profile.APIURL, true)
 	if err != nil {
 		return
 	}
@@ -140,7 +138,7 @@ func handleUserCompletion(profile *config.PrpConfigProfile, writer, errWriter io
 		for _, repo := range profile.TrackedRepos {
 			wg.Add(1)
 			go func(repo config.PrpConfigRepo) {
-				repoPrs, errors := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
+				repoPrs, errors := getRepoPullRequests(client, repo.Owner, repo.Name)
 				go func() {
 					for {
 						err := <-errors

@@ -70,18 +70,17 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 }
 
 func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool, errWriter io.Writer) (chan *prInfo, error) {
-	ctx := context.Background()
-	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, useCache)
+	client, err := getGithubClient(&profile.Token, &profile.APIURL, useCache)
 	if err != nil {
 		return nil, err
 	}
 
-	user, _, err := client.Users.Get(ctx, "")
+	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
 		return nil, err
 	}
 
-	outputs := getBasePrData(ctx, client, user, profile, errWriter)
+	outputs := getBasePrData(client, user, profile, errWriter)
 
 	filteredOutputs := make(chan *prInfo)
 	go func() {
@@ -93,7 +92,7 @@ func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useC
 
 			wg.Add(1)
 			go func(output *prInfo) {
-				handleCommitComparision(ctx, client, output, false)
+				handleCommitComparision(client, output, false)
 				if !output.Rebased {
 					filteredOutputs <- output
 				}
@@ -176,27 +175,18 @@ func rebasePullRequest(output *prInfo, errorWriter, verboseWriter io.Writer, cmd
 
 	defer cleanUp(currentBranchName, tempBranch, path, errorWriter, verboseWriter, cmdWrapper)
 
-	return handleRebase(path, ownedRemote, upstreamRemote, output.Branch, output.TargetBranch, tempBranch, verboseWriter, cmdWrapper)
+	return handleRebase(path, ownedRemote, upstreamRemote, tempBranch, output, verboseWriter, cmdWrapper)
 }
 
-func handleRebase(
-	path,
-	ownedRemote,
-	upstreamRemote,
-	branch,
-	targetBranch,
-	tempBranch string,
-	verboseWriter io.Writer,
-	cmdWrapper execWrapper.CommandBuilder,
-) error {
-	myRemoteBranch := fmt.Sprintf("%s/%s", ownedRemote, branch)
+func handleRebase(path, ownedRemote, upstreamRemote, tempBranch string, output *prInfo, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) error {
+	myRemoteBranch := fmt.Sprintf("%s/%s", ownedRemote, output.Branch)
 	fmt.Fprintf(verboseWriter, "Resetting code to %s\n", myRemoteBranch)
 	err := runCommand(path, cmdWrapper, "git", "reset", "--hard", myRemoteBranch)
 	if err != nil {
 		return wrapExitError(err, fmt.Sprintf("Unable to reset the code to %s", myRemoteBranch))
 	}
 
-	upstreamBranch := fmt.Sprintf("%s/%s", upstreamRemote, targetBranch)
+	upstreamBranch := fmt.Sprintf("%s/%s", upstreamRemote, output.TargetBranch)
 	fmt.Fprintf(verboseWriter, "Rebasing against %s\n", upstreamBranch)
 	err = runCommand(path, cmdWrapper, "git", "rebase", upstreamBranch)
 	if err != nil {
@@ -204,7 +194,7 @@ func handleRebase(
 	}
 
 	fmt.Fprintf(verboseWriter, "Pushing to %s\n", myRemoteBranch)
-	err = runCommand(path, cmdWrapper, "git", "push", ownedRemote, fmt.Sprintf("%s:%s", tempBranch, branch), "--force")
+	err = runCommand(path, cmdWrapper, "git", "push", ownedRemote, fmt.Sprintf("%s:%s", tempBranch, output.Branch), "--force")
 	if err != nil {
 		return wrapExitError(err, fmt.Sprintf("Unable to push to %s", myRemoteBranch))
 	}
@@ -254,11 +244,7 @@ func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper
 	return currentBranchName, tempBranch, nil
 }
 
-func getRepoData(
-	output *prInfo,
-	verboseWriter io.Writer,
-	cmdWrapper execWrapper.CommandBuilder,
-) (string, string, string, bool, error) {
+func getRepoData(output *prInfo, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) (string, string, string, bool, error) {
 	fmt.Fprintln(verboseWriter, "Requesting repo data from config")
 	if output.Repo.LocalPath == "" {
 		return "", "", "", false, errors.New("Path was not set for this repo")
