@@ -45,7 +45,7 @@ func shortenLabel(label string) string {
 	return strings.Join(initials, "")
 }
 
-func printResults(outputs chan *prInfo, verbose bool, w io.Writer) error {
+func printResults(outputs <-chan *prInfo, verbose bool, w io.Writer) error {
 	tabW := tabwriter.NewWriter(w, 0, 0, 0, ' ', tabwriter.Debug)
 	fmt.Fprintln(tabW, "Repo\tID\tTitle\tOwner\tBranch\tTarget\t+1\tUTD\tStatus\tReview\tLabels")
 	for po := range outputs {

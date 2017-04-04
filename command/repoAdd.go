@@ -67,7 +67,7 @@ func CompleteRepoAdd(c *cli.Context) {
 	allRepos := getAllRepos(client, *user.Login)
 
 	suggestionList := []string{}
-	suggestionChan := make(chan *string)
+	suggestionChan := make(chan *string, 5)
 	for _, repo := range allRepos {
 		go func(repo *github.Repository) {
 			firstArg := c.NArg() == 0

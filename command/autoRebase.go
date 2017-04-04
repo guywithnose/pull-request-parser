@@ -69,7 +69,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 	return nil
 }
 
-func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool, errWriter io.Writer) (chan *prInfo, error) {
+func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool, errWriter io.Writer) (<-chan *prInfo, error) {
 	client, err := getGithubClient(&profile.Token, &profile.APIURL, useCache)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useC
 
 	outputs := getBasePrData(client, user, profile, errWriter)
 
-	filteredOutputs := make(chan *prInfo)
+	filteredOutputs := make(chan *prInfo, 5)
 	go func() {
 		wg := sync.WaitGroup{}
 		for output := range outputs {

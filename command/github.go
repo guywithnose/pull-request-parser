@@ -61,13 +61,13 @@ func getGithubClient(token, apiURL *string, useCache bool) (*github.Client, erro
 	return client, nil
 }
 
-func getRepoPullRequests(client *github.Client, owner, name string) (chan *github.PullRequest, chan error) {
+func getRepoPullRequests(client *github.Client, owner, name string) (<-chan *github.PullRequest, <-chan error) {
 	opt := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	allPrs := make(chan *github.PullRequest)
-	errors := make(chan error)
+	allPrs := make(chan *github.PullRequest, 100)
+	errors := make(chan error, 1)
 	go func() {
 		for {
 			pullRequests, resp, err := client.PullRequests.List(context.Background(), owner, name, opt)
@@ -173,7 +173,7 @@ statusFor:
 	}
 }
 
-func getBasePrData(client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) chan *prInfo {
+func getBasePrData(client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) <-chan *prInfo {
 	outputChannel := make(chan *prInfo, 10)
 	go func() {
 		wg := sync.WaitGroup{}

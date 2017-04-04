@@ -38,7 +38,7 @@ func CmdParse(c *cli.Context) error {
 
 	outputs := getBasePrData(client, user, &profile, c.App.ErrWriter)
 
-	results := make(chan *prInfo)
+	results := make(chan *prInfo, 10)
 	go func() {
 		wg := sync.WaitGroup{}
 		for output := range outputs {
@@ -132,7 +132,7 @@ func handleUserCompletion(profile *config.PrpConfigProfile, writer, errWriter io
 	}
 
 	suggestionList := []string{}
-	suggestionChan := make(chan string)
+	suggestionChan := make(chan string, 5)
 	go func() {
 		wg := sync.WaitGroup{}
 		for _, repo := range profile.TrackedRepos {
