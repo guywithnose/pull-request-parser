@@ -41,8 +41,6 @@ func CmdParse(c *cli.Context) error {
 
 	filteredOutputs := filterOutputs(outputs, c.String("owner"), c.StringSlice("repo"))
 
-	sort.Sort(filteredOutputs)
-
 	getExtraData(ctx, client, user, c.Bool("need-rebase"), filteredOutputs)
 
 	return printResults(filteredOutputs, c.Bool("verbose"), c.App.Writer)

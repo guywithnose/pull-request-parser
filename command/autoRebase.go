@@ -45,8 +45,6 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 		return err
 	}
 
-	sort.Sort(outputs)
-
 	verboseWriter := ioutil.Discard
 	if c.Bool("verbose") {
 		verboseWriter = c.App.ErrWriter
@@ -72,7 +70,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 	return nil
 }
 
-func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool) (sortablePrs, error) {
+func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool) ([]*prInfo, error) {
 	ctx := context.Background()
 	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, useCache)
 	if err != nil {
@@ -369,7 +367,7 @@ func getRemotes(path string, cmdWrapper execWrapper.CommandBuilder, output *prIn
 	return ownedRemote, upstreamRemote, nil
 }
 
-func filterRebased(ctx context.Context, client *github.Client, outputs []*prInfo) sortablePrs {
+func filterRebased(ctx context.Context, client *github.Client, outputs []*prInfo) []*prInfo {
 	wg := sync.WaitGroup{}
 	for _, output := range outputs {
 		wg.Add(1)
@@ -381,7 +379,7 @@ func filterRebased(ctx context.Context, client *github.Client, outputs []*prInfo
 
 	wg.Wait()
 
-	filteredOutputs := make(sortablePrs, 0, len(outputs))
+	filteredOutputs := make([]*prInfo, 0, len(outputs))
 	for _, output := range outputs {
 		if !output.Rebased {
 			filteredOutputs = append(filteredOutputs, output)

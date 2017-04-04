@@ -114,8 +114,8 @@ func boolToString(status bool) string {
 	return "N"
 }
 
-func filterOutputs(outputs []*prInfo, owner string, repos []string) sortablePrs {
-	filteredOutputs := make(sortablePrs, 0, len(outputs))
+func filterOutputs(outputs []*prInfo, owner string, repos []string) []*prInfo {
+	filteredOutputs := make([]*prInfo, 0, len(outputs))
 	for _, output := range outputs {
 		if owner != "" && output.Owner != owner {
 			continue

@@ -36,24 +36,6 @@ type prInfo struct {
 	Hidden          bool
 }
 
-type sortablePrs []*prInfo
-
-func (s sortablePrs) Len() int {
-	return len(s)
-}
-
-func (s sortablePrs) Less(i, j int) bool {
-	if s[i].Repo.Name == s[j].Repo.Name {
-		return s[i].PullRequestID < s[j].PullRequestID
-	}
-
-	return s[i].Repo.Name < s[j].Repo.Name
-}
-
-func (s sortablePrs) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
 func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) (*github.Client, error) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *token})
 	tokenClient := oauth2.NewClient(ctx, tokenSource)
@@ -177,8 +159,8 @@ statusFor:
 	}
 }
 
-func getBasePrData(ctx context.Context, client *github.Client, user *github.User, profile *config.PrpConfigProfile) sortablePrs {
-	outputs := sortablePrs{}
+func getBasePrData(ctx context.Context, client *github.Client, user *github.User, profile *config.PrpConfigProfile) []*prInfo {
+	outputs := []*prInfo{}
 	outputChannel := make(chan *prInfo)
 	wg := sync.WaitGroup{}
 	for _, repo := range profile.TrackedRepos {

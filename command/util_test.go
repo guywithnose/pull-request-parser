@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/guywithnose/pull-request-parser/config"
@@ -134,7 +135,7 @@ func handleUserRequest(r *http.Request, owner string) *string {
 func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
 	if r.URL.String() == "/repos/own/rep/pulls?per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequest{
-			newPullRequest(2, "Really long Pull Request Title", "guy2", "label", "ref2", "sha2", "baseLabel2", "baseRef2"),
+			newPullRequest(1, "prOne", "guy", "label", "ref1", "sha1", "baseLabel1", "baseRef1"),
 		})
 		w.Header().Set("Link", fmt.Sprintf(`<%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="next", <%s/mockApi/repos/own/rep/pulls?per_page=100&page=2>; rel="last"`, server.URL, server.URL))
 		response := string(bytes)
@@ -143,9 +144,13 @@ func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *h
 
 	if r.URL.String() == "/repos/own/rep/pulls?page=2&per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequest{
-			newPullRequest(1, "prOne", "guy", "label", "ref1", "sha1", "baseLabel1", "baseRef1"),
+			newPullRequest(2, "Really long Pull Request Title", "guy2", "label", "ref2", "sha2", "baseLabel2", "baseRef2"),
 		})
 		response := string(bytes)
+
+		// Make sure these are listed second
+		time.Sleep(100 * time.Millisecond)
+
 		return &response
 	}
 
