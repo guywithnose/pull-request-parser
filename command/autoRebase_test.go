@@ -512,7 +512,7 @@ func TestCompleteAutoRebaseFlags(t *testing.T) {
 	}
 	os.Args = []string{"auto-rebase", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "--repo\n--pull-request-number\n--verbose\n")
+	assert.Equal(t, "--repo\n--pull-request-number\n--verbose\n", writer.String())
 }
 
 func TestCompleteAutoRebaseRepo(t *testing.T) {
@@ -524,7 +524,7 @@ func TestCompleteAutoRebaseRepo(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--repo", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "own/rep\n")
+	assert.Equal(t, "own/rep\n", writer.String())
 }
 
 func TestCompleteAutoRebaseRepoMulti(t *testing.T) {
@@ -538,7 +538,7 @@ func TestCompleteAutoRebaseRepoMulti(t *testing.T) {
 	app, _, writer := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--repo", "own/rep", "--repo", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteAutoRebasePullRequestNumber(t *testing.T) {
@@ -550,7 +550,7 @@ func TestCompleteAutoRebasePullRequestNumber(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "1\n")
+	assert.Equal(t, "1\n", writer.String())
 }
 
 func TestCompleteAutoRebaseNoConfig(t *testing.T) {
@@ -558,7 +558,7 @@ func TestCompleteAutoRebaseNoConfig(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteAutoRebaseBadAPIURL(t *testing.T) {
@@ -568,7 +568,7 @@ func TestCompleteAutoRebaseBadAPIURL(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
 	CompleteAutoRebase(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func getExpectedCommands(repoDir string) []*execWrapper.ExpectedCommand {

@@ -53,7 +53,7 @@ func TestCompleteRepoRemoveRepos(t *testing.T) {
 	os.Args = []string{"repo", "remove", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
+	assert.Equal(t, "foo/bar\nown/rep\n", writer.String())
 }
 
 func TestCompleteRepoRemoveDone(t *testing.T) {
@@ -64,7 +64,7 @@ func TestCompleteRepoRemoveDone(t *testing.T) {
 	os.Args = []string{"repo", "remove", "own/rep", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteRepoRemoveNoConfig(t *testing.T) {
@@ -72,5 +72,5 @@ func TestCompleteRepoRemoveNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }

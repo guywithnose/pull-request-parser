@@ -81,7 +81,7 @@ func TestCompleteRepoSetPathRepos(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
+	assert.Equal(t, "foo/bar\nown/rep\n", writer.String())
 }
 
 func TestCompleteRepoSetPathFileCompletion(t *testing.T) {
@@ -92,7 +92,7 @@ func TestCompleteRepoSetPathFileCompletion(t *testing.T) {
 	os.Args = []string{"repo", "set-path", "own/rep", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "fileCompletion\n")
+	assert.Equal(t, "fileCompletion\n", writer.String())
 }
 
 func TestCompleteRepoSetPathDone(t *testing.T) {
@@ -103,7 +103,7 @@ func TestCompleteRepoSetPathDone(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "own/rep", "goo", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteRepoSetPathNoConfig(t *testing.T) {
@@ -111,5 +111,5 @@ func TestCompleteRepoSetPathNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "ignore-build", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }

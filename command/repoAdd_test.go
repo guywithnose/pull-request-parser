@@ -29,7 +29,7 @@ func TestCmdRepoAdd(t *testing.T) {
 
 	expectedConfigFile, configFileName := getConfigWithTwoRepos(t)
 	defer removeFile(t, configFileName)
-	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
+	assert.Equal(t, expectedConfigFile, *modifiedConfigData)
 }
 
 func TestCmdRepoAddNoConfig(t *testing.T) {
@@ -66,7 +66,7 @@ func TestCompleteRepoAddOwner(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "source\n")
+	assert.Equal(t, "source\n", writer.String())
 }
 
 func TestCompleteRepoAddName(t *testing.T) {
@@ -79,7 +79,7 @@ func TestCompleteRepoAddName(t *testing.T) {
 	os.Args = []string{"repo", "add", "source", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "rep\n")
+	assert.Equal(t, "rep\n", writer.String())
 }
 
 func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
@@ -92,7 +92,7 @@ func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
 	os.Args = []string{"repo", "add", "foo", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "\n")
+	assert.Equal(t, "\n", writer.String())
 }
 
 func TestCompleteRepoAddDone(t *testing.T) {
@@ -105,7 +105,7 @@ func TestCompleteRepoAddDone(t *testing.T) {
 	os.Args = []string{"repo", "add", "foo", "bar", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteRepoAddNoConfig(t *testing.T) {
@@ -116,7 +116,7 @@ func TestCompleteRepoAddNoConfig(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteRepoAddUserFailure(t *testing.T) {
@@ -128,7 +128,7 @@ func TestCompleteRepoAddUserFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteRepoAddReposFailure(t *testing.T) {
@@ -140,7 +140,7 @@ func TestCompleteRepoAddReposFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "\n")
+	assert.Equal(t, "\n", writer.String())
 }
 
 func TestCompleteRepoAddRepoFailure(t *testing.T) {
@@ -152,7 +152,7 @@ func TestCompleteRepoAddRepoFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "\n")
+	assert.Equal(t, "\n", writer.String())
 }
 
 func TestCompleteRepoAddBadApiUrl(t *testing.T) {
@@ -162,7 +162,7 @@ func TestCompleteRepoAddBadApiUrl(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func getRepoAddTestServer(failureURL string) *httptest.Server {

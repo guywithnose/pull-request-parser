@@ -342,7 +342,7 @@ func TestCompleteParseFlags(t *testing.T) {
 	}
 	os.Args = []string{"parse", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "--owner\n--repo\n--need-rebase\n--verbose\n")
+	assert.Equal(t, "--owner\n--repo\n--need-rebase\n--verbose\n", writer.String())
 }
 
 func TestCompleteParseUser(t *testing.T) {
@@ -354,7 +354,7 @@ func TestCompleteParseUser(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "fooGuy\nfooGuy2\nguy\nguy2\n")
+	assert.Equal(t, "fooGuy\nfooGuy2\nguy\nguy2\n", writer.String())
 }
 
 func TestCompleteParseUserNoConfig(t *testing.T) {
@@ -366,7 +366,7 @@ func TestCompleteParseUserNoConfig(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteParseUserBadApiUrl(t *testing.T) {
@@ -376,7 +376,7 @@ func TestCompleteParseUserBadApiUrl(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "")
+	assert.Equal(t, "", writer.String())
 }
 
 func TestCompleteParseUserPullRequestFailure(t *testing.T) {
@@ -388,7 +388,7 @@ func TestCompleteParseUserPullRequestFailure(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "fooGuy\nfooGuy2\n")
+	assert.Equal(t, "fooGuy\nfooGuy2\n", writer.String())
 }
 
 func TestCompleteParseRepo(t *testing.T) {
@@ -400,7 +400,7 @@ func TestCompleteParseRepo(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
+	assert.Equal(t, "foo/bar\nown/rep\n", writer.String())
 }
 
 func TestCompleteParseRepoMulti(t *testing.T) {
@@ -414,7 +414,7 @@ func TestCompleteParseRepoMulti(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "foo/bar", "--repo", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
-	assert.Equal(t, writer.String(), "own/rep\n")
+	assert.Equal(t, "own/rep\n", writer.String())
 }
 
 func getParseTestServer(failureURL string) *httptest.Server {
