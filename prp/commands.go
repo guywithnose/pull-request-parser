@@ -66,6 +66,10 @@ var Commands = []cli.Command{
 				Name:  "verbose, v",
 				Usage: "Output more info",
 			},
+			cli.BoolFlag{
+				Name:  "use-cache, uc, c",
+				Usage: "Use file cache",
+			},
 		},
 	},
 	{
@@ -151,6 +155,10 @@ var Commands = []cli.Command{
 			cli.BoolFlag{
 				Name:  "verbose, v",
 				Usage: "Output more info",
+			},
+			cli.BoolFlag{
+				Name:  "use-cache, uc, c",
+				Usage: "Use file cache",
 			},
 		},
 	},

@@ -39,7 +39,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 
 	profile := configData.Profiles[*profileName]
 
-	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), false, c.App.ErrWriter)
+	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), c.Bool("use-cache"), c.App.ErrWriter)
 	if err != nil {
 		return err
 	}

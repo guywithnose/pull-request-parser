@@ -26,7 +26,7 @@ func CmdParse(c *cli.Context) error {
 	}
 
 	profile := configData.Profiles[*profileName]
-	client, err := getGithubClient(&profile.Token, &profile.APIURL, false)
+	client, err := getGithubClient(&profile.Token, &profile.APIURL, c.Bool("use-cache"))
 	if err != nil {
 		return err
 	}
