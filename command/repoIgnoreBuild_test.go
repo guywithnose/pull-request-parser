@@ -58,7 +58,7 @@ func TestCompleteRepoIgnoreBuildRepos(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "ignore-build", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
 }
@@ -69,7 +69,7 @@ func TestCompleteRepoIgnoreBuildIgnoredBuilds(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own/rep"}))
 	os.Args = []string{"repo", "ignore-build", "own/rep", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "goo\n")
 }
@@ -80,7 +80,7 @@ func TestCompleteRepoIgnoreBuildDone(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own/rep", "goo"}))
 	os.Args = []string{"repo", "ignore-build", "own/rep", "goo", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -88,7 +88,7 @@ func TestCompleteRepoIgnoreBuildDone(t *testing.T) {
 func TestCompleteRepoIgnoreBuildNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	os.Args = []string{"repo", "ignore-build", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoIgnoreBuild(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }

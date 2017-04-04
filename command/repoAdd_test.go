@@ -64,7 +64,7 @@ func TestCompleteRepoAddOwner(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "source\n")
 }
@@ -77,7 +77,7 @@ func TestCompleteRepoAddName(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"source"}))
 	os.Args = []string{"repo", "add", "source", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "rep\n")
 }
@@ -90,7 +90,7 @@ func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"foo"}))
 	os.Args = []string{"repo", "add", "foo", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "\n")
 }
@@ -103,7 +103,7 @@ func TestCompleteRepoAddDone(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"foo", "bar"}))
 	os.Args = []string{"repo", "add", "foo", "bar", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -114,7 +114,7 @@ func TestCompleteRepoAddNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("profile", "foo", "doc")
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -126,7 +126,7 @@ func TestCompleteRepoAddUserFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -138,7 +138,7 @@ func TestCompleteRepoAddReposFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "\n")
 }
@@ -150,7 +150,7 @@ func TestCompleteRepoAddRepoFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "\n")
 }
@@ -160,7 +160,7 @@ func TestCompleteRepoAddBadApiUrl(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
@@ -19,12 +20,13 @@ func TestCmdParse(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -32,8 +34,7 @@ func TestCmdParse(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -44,12 +45,13 @@ func TestCmdParseVerbose(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	set.Bool("verbose", true, "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title                         |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne                      |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |label2,label3",
 			"bar |2 |fooPrTwo                      |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |label4,label5,really-long-label",
@@ -57,8 +59,7 @@ func TestCmdParseVerbose(t *testing.T) {
 			"rep |2 |Really long Pull Request Title|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -69,19 +70,19 @@ func TestCmdParseNeedRebase(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	set.Bool("need-rebase", true, "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:3])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
 			"rep |1 |prOne   |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |L",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -92,18 +93,18 @@ func TestCmdParseUserFilter(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	set.String("owner", "guy", "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:2])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title|Owner|Branch|Target  |+1|UTD|Status|Review|Labels",
 			"rep |1 |prOne|guy  |ref1  |baseRef1|1 |N  |Y     |N     |L",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -115,19 +116,19 @@ func TestCmdParseRepoFilter(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	repoFlag := cli.StringSlice{"foo/bar"}
 	set.Var(&repoFlag, "repo", "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:3])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -139,12 +140,13 @@ func TestCmdParseRepoFilterMultiple(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	repoFlag := cli.StringSlice{"foo/bar", "own/rep"}
 	set.Var(&repoFlag, "repo", "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -152,8 +154,7 @@ func TestCmdParseRepoFilterMultiple(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -211,19 +212,19 @@ func TestCmdParsePullRequestFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:3])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -233,12 +234,13 @@ func TestCmdParseStatusFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -246,8 +248,7 @@ func TestCmdParseStatusFailure(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -257,12 +258,13 @@ func TestCmdParseLabelFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -270,8 +272,7 @@ func TestCmdParseLabelFailure(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -281,12 +282,13 @@ func TestCmdParseCommentFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -294,8 +296,7 @@ func TestCmdParseCommentFailure(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -305,12 +306,13 @@ func TestCmdParseCommitCompareFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
 	assert.Equal(
 		t,
-		writer.String(),
-		strings.Join([]string{
+		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
 			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |N  |N/Y   |Y     |L,L",
 			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
@@ -318,8 +320,7 @@ func TestCmdParseCommitCompareFailure(t *testing.T) {
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
-			"\n",
-		),
+		output,
 	)
 }
 
@@ -327,7 +328,7 @@ func TestCompleteParseFlags(t *testing.T) {
 	_, configFileName := getConfigWithFooProfile(t)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	app.Commands = []cli.Command{
 		{
 			Name: "parse",
@@ -350,7 +351,7 @@ func TestCompleteParseUser(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "fooGuy\nfooGuy2\nguy\nguy2\n")
@@ -362,7 +363,7 @@ func TestCompleteParseUserNoConfig(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := flag.NewFlagSet("test", 0)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
@@ -372,7 +373,7 @@ func TestCompleteParseUserBadApiUrl(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, "%s/mockApi")
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
@@ -384,7 +385,7 @@ func TestCompleteParseUserPullRequestFailure(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "fooGuy\nfooGuy2\n")
@@ -396,7 +397,7 @@ func TestCompleteParseRepo(t *testing.T) {
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
@@ -410,7 +411,7 @@ func TestCompleteParseRepoMulti(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	repoFlag := cli.StringSlice{"foo/bar"}
 	set.Var(&repoFlag, "repo", "doc")
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "foo/bar", "--repo", "--completion"}
 	CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "own/rep\n")

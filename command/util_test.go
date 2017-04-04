@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/guywithnose/pull-request-parser/config"
@@ -72,18 +71,13 @@ func getConfigWithIgnoredBuild(t *testing.T) (config.PrpConfig, string) {
 	return conf, configFileName
 }
 
-func appWithTestWriter() (*cli.App, *bytes.Buffer) {
+func appWithTestWriters() (*cli.App, *bytes.Buffer, *bytes.Buffer) {
 	app := cli.NewApp()
 	writer := new(bytes.Buffer)
+	errWriter := new(bytes.Buffer)
 	app.Writer = writer
-	return app, writer
-}
-
-func appWithTestErrorWriter() (*cli.App, *bytes.Buffer) {
-	app := cli.NewApp()
-	writer := new(bytes.Buffer)
-	app.ErrWriter = writer
-	return app, writer
+	app.ErrWriter = errWriter
+	return app, writer, errWriter
 }
 
 func getBaseFlagSet(configFileName string) *flag.FlagSet {
@@ -147,10 +141,6 @@ func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *h
 			newPullRequest(2, "Really long Pull Request Title", "guy2", "label", "ref2", "sha2", "baseLabel2", "baseRef2"),
 		})
 		response := string(bytes)
-
-		// Make sure these are listed second
-		time.Sleep(100 * time.Millisecond)
-
 		return &response
 	}
 

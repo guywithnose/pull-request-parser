@@ -87,7 +87,7 @@ func TestCompleteProfileAddToken(t *testing.T) {
 	assert.Nil(t, config.WriteConfig(configFileName, &configWithToken))
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"profile", "add", "--token", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "abc\n")
 }
@@ -95,7 +95,7 @@ func TestCompleteProfileAddToken(t *testing.T) {
 func TestCompleteProfileAddFlags(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	os.Args = []string{"profile", "add", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	app.Commands = []cli.Command{
 		{
 			Name: "add",
@@ -118,7 +118,7 @@ func TestCompleteProfileAddApiUrl(t *testing.T) {
 	assert.Nil(t, config.WriteConfig(configFileName, &conf))
 	os.Args = []string{"profile", "add", "--apiUrl", "--completion"}
 	set := getBaseFlagSet(configFileName)
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "http\\://api.com\n")
 }
@@ -126,7 +126,7 @@ func TestCompleteProfileAddApiUrl(t *testing.T) {
 func TestCompleteProfileAddNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	os.Args = []string{"profile", "add", "--apiUrl", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteProfileAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }

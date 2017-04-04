@@ -14,7 +14,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/google/go-github/github"
 	"github.com/guywithnose/pull-request-parser/config"
 	"github.com/guywithnose/pull-request-parser/execWrapper"
 	"github.com/urfave/cli"
@@ -40,7 +39,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 
 	profile := configData.Profiles[*profileName]
 
-	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), false)
+	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), false, c.App.ErrWriter)
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 	}
 
 	success := true
-	for _, output := range outputs {
+	for output := range outputs {
 		if c.Int("pull-request-number") != 0 && output.PullRequestID != c.Int("pull-request-number") {
 			continue
 		}
@@ -70,7 +69,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 	return nil
 }
 
-func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool) ([]*prInfo, error) {
+func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useCache bool, errWriter io.Writer) (chan *prInfo, error) {
 	ctx := context.Background()
 	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, useCache)
 	if err != nil {
@@ -82,10 +81,31 @@ func getValidPullRequests(profile *config.PrpConfigProfile, repos []string, useC
 		return nil, err
 	}
 
-	outputs := getBasePrData(ctx, client, user, profile)
+	outputs := getBasePrData(ctx, client, user, profile, errWriter)
 
-	filteredOutputs := filterOutputs(outputs, *user.Login, repos)
-	return filterRebased(ctx, client, filteredOutputs), nil
+	filteredOutputs := make(chan *prInfo)
+	go func() {
+		wg := sync.WaitGroup{}
+		for output := range outputs {
+			if !filterOutput(output, *user.Login, repos) {
+				continue
+			}
+
+			wg.Add(1)
+			go func(output *prInfo) {
+				handleCommitComparision(ctx, client, output, false)
+				if !output.Rebased {
+					filteredOutputs <- output
+				}
+				wg.Done()
+			}(output)
+		}
+
+		wg.Wait()
+		close(filteredOutputs)
+	}()
+
+	return filteredOutputs, nil
 }
 
 // CompleteAutoRebase handles bash autocompletion for the 'auto-rebase' command
@@ -112,14 +132,14 @@ func handleCompletion(c *cli.Context) {
 	}
 
 	profile := configData.Profiles[*profileName]
-	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), true)
+	outputs, err := getValidPullRequests(&profile, c.StringSlice("repo"), true, c.App.ErrWriter)
 	if err != nil {
 		return
 	}
 
 	selectedRepos := c.StringSlice("repo")
 	completions := make([]string, 0, len(profile.TrackedRepos))
-	for _, output := range outputs {
+	for output := range outputs {
 		fullRepoName := fmt.Sprintf("%s/%s", output.Repo.Owner, output.Repo.Name)
 		if lastParam == "--pull-request-number" {
 			completions = append(completions, strconv.Itoa(output.PullRequestID))
@@ -364,26 +384,4 @@ func getRemotes(path string, cmdWrapper execWrapper.CommandBuilder, output *prIn
 	}
 
 	return ownedRemote, upstreamRemote, nil
-}
-
-func filterRebased(ctx context.Context, client *github.Client, outputs []*prInfo) []*prInfo {
-	wg := sync.WaitGroup{}
-	for _, output := range outputs {
-		wg.Add(1)
-		go func(output *prInfo) {
-			handleCommitComparision(ctx, client, output, false)
-			wg.Done()
-		}(output)
-	}
-
-	wg.Wait()
-
-	filteredOutputs := make([]*prInfo, 0, len(outputs))
-	for _, output := range outputs {
-		if !output.Rebased {
-			filteredOutputs = append(filteredOutputs, output)
-		}
-	}
-
-	return filteredOutputs
 }

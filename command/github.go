@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -60,25 +61,38 @@ func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) 
 	return client, nil
 }
 
-func getRepoPullRequests(ctx context.Context, client *github.Client, owner, name string) ([]*github.PullRequest, error) {
+func getRepoPullRequests(ctx context.Context, client *github.Client, owner, name string) (chan *github.PullRequest, chan error) {
 	opt := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	allPrs := []*github.PullRequest{}
-	for {
-		pullRequests, resp, err := client.PullRequests.List(ctx, owner, name, opt)
-		if err != nil {
-			return nil, err
-		}
+	allPrs := make(chan *github.PullRequest)
+	errors := make(chan error)
+	go func() {
+		for {
+			pullRequests, resp, err := client.PullRequests.List(ctx, owner, name, opt)
+			if err != nil {
+				errors <- err
+				close(errors)
+				close(allPrs)
+				return
+			}
 
-		allPrs = append(allPrs, pullRequests...)
-		if resp.NextPage == 0 {
-			return allPrs, nil
-		}
+			for _, pr := range pullRequests {
+				allPrs <- pr
+			}
 
-		opt.ListOptions.Page = resp.NextPage
-	}
+			if resp.NextPage == 0 {
+				close(allPrs)
+				close(errors)
+				return
+			}
+
+			opt.ListOptions.Page = resp.NextPage
+		}
+	}()
+
+	return allPrs, errors
 }
 
 func handleComments(ctx context.Context, client *github.Client, user *github.User, output *prInfo) {
@@ -159,51 +173,51 @@ statusFor:
 	}
 }
 
-func getBasePrData(ctx context.Context, client *github.Client, user *github.User, profile *config.PrpConfigProfile) []*prInfo {
-	outputs := []*prInfo{}
-	outputChannel := make(chan *prInfo)
-	wg := sync.WaitGroup{}
-	for _, repo := range profile.TrackedRepos {
-		wg.Add(1)
-		go func(repo config.PrpConfigRepo) {
-			repoPrs, err := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
-			if err != nil {
-				wg.Done()
-				return
-			}
-
-			for _, pr := range repoPrs {
-				wg.Add(1)
-				outputChannel <- &prInfo{
-					Repo:            &repo,
-					PullRequestID:   pr.GetNumber(),
-					Title:           pr.GetTitle(),
-					Owner:           pr.Head.User.GetLogin(),
-					Branch:          pr.Head.GetRef(),
-					TargetBranch:    pr.Base.GetRef(),
-					HeadLabel:       pr.Head.GetLabel(),
-					BaseLabel:       pr.Base.GetLabel(),
-					SHA:             pr.Head.GetSHA(),
-					BaseSSHURL:      pr.Base.Repo.GetSSHURL(),
-					HeadSSHURL:      pr.Head.Repo.GetSSHURL(),
-					BuildInfo:       map[string]bool{},
-					NeedsMyApproval: user.GetLogin() != pr.Head.User.GetLogin(),
-					IgnoredBuilds:   repo.IgnoredBuilds,
-				}
-			}
-			wg.Done()
-		}(repo)
-	}
-
+func getBasePrData(ctx context.Context, client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) chan *prInfo {
+	outputChannel := make(chan *prInfo, 10)
 	go func() {
-		for {
-			outputs = append(outputs, <-outputChannel)
-			wg.Done()
-		}
-	}()
+		wg := sync.WaitGroup{}
+		for _, repo := range profile.TrackedRepos {
+			wg.Add(1)
+			go func(repo config.PrpConfigRepo) {
+				repoPrs, errors := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
+				go func() {
+					for {
+						err := <-errors
+						if err == nil {
+							return
+						}
 
-	wg.Wait()
-	return outputs
+						fmt.Fprintln(errorWriter, err)
+					}
+				}()
+
+				for pr := range repoPrs {
+					outputChannel <- &prInfo{
+						Repo:            &repo,
+						PullRequestID:   pr.GetNumber(),
+						Title:           pr.GetTitle(),
+						Owner:           pr.Head.User.GetLogin(),
+						Branch:          pr.Head.GetRef(),
+						TargetBranch:    pr.Base.GetRef(),
+						HeadLabel:       pr.Head.GetLabel(),
+						BaseLabel:       pr.Base.GetLabel(),
+						SHA:             pr.Head.GetSHA(),
+						BaseSSHURL:      pr.Base.Repo.GetSSHURL(),
+						HeadSSHURL:      pr.Head.Repo.GetSSHURL(),
+						BuildInfo:       map[string]bool{},
+						NeedsMyApproval: user.GetLogin() != pr.Head.User.GetLogin(),
+						IgnoredBuilds:   repo.IgnoredBuilds,
+					}
+				}
+				wg.Done()
+			}(repo)
+		}
+
+		wg.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
 }
 
 func getAllRepos(ctx context.Context, client *github.Client, login string) []*github.Repository {

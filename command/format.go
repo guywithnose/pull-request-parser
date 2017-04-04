@@ -45,10 +45,10 @@ func shortenLabel(label string) string {
 	return strings.Join(initials, "")
 }
 
-func printResults(outputs []*prInfo, verbose bool, w io.Writer) error {
+func printResults(outputs chan *prInfo, verbose bool, w io.Writer) error {
 	tabW := tabwriter.NewWriter(w, 0, 0, 0, ' ', tabwriter.Debug)
 	fmt.Fprintln(tabW, "Repo\tID\tTitle\tOwner\tBranch\tTarget\t+1\tUTD\tStatus\tReview\tLabels")
-	for _, po := range outputs {
+	for po := range outputs {
 		if !po.Hidden {
 			title := po.Title
 			if !verbose {
@@ -114,28 +114,30 @@ func boolToString(status bool) string {
 	return "N"
 }
 
-func filterOutputs(outputs []*prInfo, owner string, repos []string) []*prInfo {
-	filteredOutputs := make([]*prInfo, 0, len(outputs))
-	for _, output := range outputs {
-		if owner != "" && output.Owner != owner {
-			continue
-		}
-
-		if len(repos) != 0 {
-			matched := false
-			for _, repoName := range repos {
-				if repoName == fmt.Sprintf("%s/%s", output.Repo.Owner, output.Repo.Name) {
-					matched = true
-				}
-			}
-
-			if !matched {
-				continue
-			}
-		}
-
-		filteredOutputs = append(filteredOutputs, output)
+func filterOutput(output *prInfo, owner string, repos []string) bool {
+	if owner != "" && output.Owner != owner {
+		return false
 	}
 
-	return filteredOutputs
+	if len(repos) != 0 {
+		for _, repoName := range repos {
+			if repoName == fmt.Sprintf("%s/%s", output.Repo.Owner, output.Repo.Name) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func stringSliceContains(needle string, haystack []string) bool {
+	for _, straw := range haystack {
+		if needle == straw {
+			return true
+		}
+	}
+
+	return false
 }

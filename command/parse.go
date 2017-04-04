@@ -37,42 +37,56 @@ func CmdParse(c *cli.Context) error {
 		return err
 	}
 
-	outputs := getBasePrData(ctx, client, user, &profile)
+	outputs := getBasePrData(ctx, client, user, &profile, c.App.ErrWriter)
 
-	filteredOutputs := filterOutputs(outputs, c.String("owner"), c.StringSlice("repo"))
+	results := make(chan *prInfo)
+	go func() {
+		wg := sync.WaitGroup{}
+		for output := range outputs {
+			if !filterOutput(output, c.String("owner"), c.StringSlice("repo")) {
+				continue
+			}
 
-	getExtraData(ctx, client, user, c.Bool("need-rebase"), filteredOutputs)
+			wg.Add(1)
+			go func(output *prInfo) {
+				getExtraData(ctx, client, user, c.Bool("need-rebase"), output)
+				results <- output
+				wg.Done()
+			}(output)
+		}
 
-	return printResults(filteredOutputs, c.Bool("verbose"), c.App.Writer)
+		wg.Wait()
+		close(results)
+	}()
+
+	return printResults(results, c.Bool("verbose"), c.App.Writer)
 }
 
-func getExtraData(ctx context.Context, client *github.Client, user *github.User, filterRebased bool, outputs []*prInfo) {
+func getExtraData(ctx context.Context, client *github.Client, user *github.User, filterRebased bool, output *prInfo) {
 	wg := sync.WaitGroup{}
-	for _, output := range outputs {
-		wg.Add(1)
-		go func(output *prInfo) {
-			handleCommitComparision(ctx, client, output, filterRebased)
-			wg.Done()
-		}(output)
+	wg.Add(1)
+	go func(output *prInfo) {
+		handleCommitComparision(ctx, client, output, filterRebased)
+		wg.Done()
+	}(output)
 
-		wg.Add(1)
-		go func(output *prInfo) {
-			handleComments(ctx, client, user, output)
-			wg.Done()
-		}(output)
+	wg.Add(1)
+	go func(output *prInfo) {
+		handleComments(ctx, client, user, output)
+		wg.Done()
+	}(output)
 
-		wg.Add(1)
-		go func(output *prInfo) {
-			handleLabels(ctx, client, output)
-			wg.Done()
-		}(output)
+	wg.Add(1)
+	go func(output *prInfo) {
+		handleLabels(ctx, client, output)
+		wg.Done()
+	}(output)
 
-		wg.Add(1)
-		go func(output *prInfo) {
-			handleStatuses(ctx, client, output)
-			wg.Done()
-		}(output)
-	}
+	wg.Add(1)
+	go func(output *prInfo) {
+		handleStatuses(ctx, client, output)
+		wg.Done()
+	}(output)
 
 	wg.Wait()
 }
@@ -97,7 +111,7 @@ func CompleteParse(c *cli.Context) {
 
 	profile := configData.Profiles[*profileName]
 	if lastParam == "--user" {
-		handleUserCompletion(&profile, c.App.Writer)
+		handleUserCompletion(&profile, c.App.Writer, c.App.ErrWriter)
 		return
 	}
 
@@ -112,17 +126,7 @@ func CompleteParse(c *cli.Context) {
 	}
 }
 
-func stringSliceContains(needle string, haystack []string) bool {
-	for _, straw := range haystack {
-		if needle == straw {
-			return true
-		}
-	}
-
-	return false
-}
-
-func handleUserCompletion(profile *config.PrpConfigProfile, writer io.Writer) {
+func handleUserCompletion(profile *config.PrpConfigProfile, writer, errWriter io.Writer) {
 	ctx := context.Background()
 	client, err := getGithubClient(ctx, &profile.Token, &profile.APIURL, true)
 	if err != nil {
@@ -131,34 +135,37 @@ func handleUserCompletion(profile *config.PrpConfigProfile, writer io.Writer) {
 
 	suggestionList := []string{}
 	suggestionChan := make(chan string)
-	wg := sync.WaitGroup{}
-	for _, repo := range profile.TrackedRepos {
-		wg.Add(1)
-		go func(repo config.PrpConfigRepo) {
-			repoPrs, err := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
-			if err != nil {
-				wg.Done()
-				return
-			}
-
-			for _, pr := range repoPrs {
-				wg.Add(1)
-				suggestionChan <- pr.Head.User.GetLogin()
-			}
-
-			wg.Done()
-		}(repo)
-	}
-
 	go func() {
-		for {
-			newSuggestion := <-suggestionChan
-			suggestionList = append(suggestionList, newSuggestion)
-			wg.Done()
+		wg := sync.WaitGroup{}
+		for _, repo := range profile.TrackedRepos {
+			wg.Add(1)
+			go func(repo config.PrpConfigRepo) {
+				repoPrs, errors := getRepoPullRequests(ctx, client, repo.Owner, repo.Name)
+				go func() {
+					for {
+						err := <-errors
+						if err == nil {
+							return
+						}
+
+						fmt.Fprintln(errWriter, err)
+					}
+				}()
+
+				for pr := range repoPrs {
+					suggestionChan <- pr.Head.User.GetLogin()
+				}
+
+				wg.Done()
+			}(repo)
 		}
+		wg.Wait()
+		close(suggestionChan)
 	}()
 
-	wg.Wait()
+	for newSuggestion := range suggestionChan {
+		suggestionList = append(suggestionList, newSuggestion)
+	}
 
 	suggestionList = unique(suggestionList)
 	sort.Strings(suggestionList)

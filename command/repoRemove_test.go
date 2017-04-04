@@ -51,7 +51,7 @@ func TestCompleteRepoRemoveRepos(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "remove", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
 }
@@ -62,7 +62,7 @@ func TestCompleteRepoRemoveDone(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own/rep"}))
 	os.Args = []string{"repo", "remove", "own/rep", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -70,7 +70,7 @@ func TestCompleteRepoRemoveDone(t *testing.T) {
 func TestCompleteRepoRemoveNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	os.Args = []string{"repo", "ignore-build", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoRemove(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }

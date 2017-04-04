@@ -79,7 +79,7 @@ func TestCompleteRepoSetPathRepos(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "ignore-build", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "foo/bar\nown/rep\n")
 }
@@ -90,7 +90,7 @@ func TestCompleteRepoSetPathFileCompletion(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own/rep"}))
 	os.Args = []string{"repo", "set-path", "own/rep", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "fileCompletion\n")
 }
@@ -101,7 +101,7 @@ func TestCompleteRepoSetPathDone(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own/rep", "goo"}))
 	os.Args = []string{"repo", "ignore-build", "own/rep", "goo", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
@@ -109,7 +109,7 @@ func TestCompleteRepoSetPathDone(t *testing.T) {
 func TestCompleteRepoSetPathNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	os.Args = []string{"repo", "ignore-build", "--completion"}
-	app, writer := appWithTestWriter()
+	app, writer, _ := appWithTestWriters()
 	CompleteRepoSetPath(cli.NewContext(app, set, nil))
 	assert.Equal(t, writer.String(), "")
 }
