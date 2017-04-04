@@ -70,30 +70,6 @@ func TestLoadConfigFromFileInvalidJSON(t *testing.T) {
 	assert.Nil(t, os.Remove(configFile.Name()))
 }
 
-func TestLoadEmptyConfigAndWrite(t *testing.T) {
-	configFile, err := ioutil.TempFile("/tmp", "config")
-	assert.Nil(t, err)
-
-	err = ioutil.WriteFile(configFile.Name(), []byte("{}"), 0644)
-	assert.Nil(t, err)
-
-	configData, err := LoadConfigFromFile(configFile.Name())
-	assert.Nil(t, err)
-
-	err = WriteConfig(configFile.Name(), configData)
-	assert.Nil(t, err)
-
-	configBytes, err := ioutil.ReadFile(configFile.Name())
-	assert.Nil(t, err)
-
-	expectedJSONString := `{}`
-	if string(configBytes) != expectedJSONString {
-		t.Fatalf("File was %s, expected %s", configBytes, expectedJSONString)
-	}
-
-	assert.Nil(t, os.Remove(configFile.Name()))
-}
-
 func TestLoadEmptyProfile(t *testing.T) {
 	configFile, err := ioutil.TempFile("/tmp", "config")
 	assert.Nil(t, err)
