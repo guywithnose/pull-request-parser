@@ -105,7 +105,8 @@ func TestCmdAutoRebaseStashError(t *testing.T) {
 func TestCmdAutoRebaseCurrentBranchError(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	ts, writer := runBaseCommand(t, "", repoDir, getBranchNameErrorCommandBuilder(repoDir, "Invalid output", 1), true, true)
+	commandBuilder := getFailureCommands(repoDir, "git symbolic-ref HEAD", "Invalid output", 5, 12, 1)
+	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
 		t,
@@ -124,7 +125,8 @@ func TestCmdAutoRebaseCurrentBranchError(t *testing.T) {
 func TestCmdAutoRebaseNoBranchCheckedOut(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	ts, writer := runBaseCommand(t, "", repoDir, getBranchNameErrorCommandBuilder(repoDir, "Not a branch", 128), true, true)
+	commandBuilder := getFailureCommands(repoDir, "git symbolic-ref HEAD", "Not a branch", 5, 12, 128)
+	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
 		t,
@@ -140,17 +142,11 @@ func TestCmdAutoRebaseNoBranchCheckedOut(t *testing.T) {
 	)
 }
 
-func getBranchNameErrorCommandBuilder(repoDir, message string, errorCode int) *execWrapper.TestCommandBuilder {
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[5] = execWrapper.NewExpectedCommand(repoDir, "git symbolic-ref HEAD", message, errorCode)
-	commandBuilder.ExpectedCommands = append(commandBuilder.ExpectedCommands[:6], commandBuilder.ExpectedCommands[12])
-	return commandBuilder
-}
-
 func TestCmdAutoRebaseTempBranchError(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	ts, writer := runBaseCommand(t, "", repoDir, getCheckoutErrCommandBuilder(repoDir, "checkout error", 1), true, true)
+	commandBuilder := getFailureCommands(repoDir, "git checkout -b prp-ref1", "checkout error", 6, 12, 1)
+	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
 		t,
@@ -168,7 +164,8 @@ func TestCmdAutoRebaseTempBranchError(t *testing.T) {
 func TestCmdAutoRebaseTempBranchExists(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	ts, writer := runBaseCommand(t, "", repoDir, getCheckoutErrCommandBuilder(repoDir, "branch exists", 128), true, true)
+	commandBuilder := getFailureCommands(repoDir, "git checkout -b prp-ref1", "branch exists", 6, 12, 128)
+	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
 		t,
@@ -249,9 +246,7 @@ func TestCmdAutoRebaseStashPopFailure(t *testing.T) {
 func TestCmdAutoRebaseResetFailure(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[7] = execWrapper.NewExpectedCommand(repoDir, "git reset --hard origin/ref1", "reset failure", 1)
-	commandBuilder.ExpectedCommands = append(commandBuilder.ExpectedCommands[:8], commandBuilder.ExpectedCommands[10:]...)
+	commandBuilder := getFailureCommands(repoDir, "git reset --hard origin/ref1", "reset failure", 7, 10, 1)
 	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
@@ -272,9 +267,7 @@ func TestCmdAutoRebaseResetFailure(t *testing.T) {
 func TestCmdAutoRebaseRebaseFailure(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[8] = execWrapper.NewExpectedCommand(repoDir, "git rebase upstream/baseRef1", "rebase failure", 1)
-	commandBuilder.ExpectedCommands = append(commandBuilder.ExpectedCommands[:9], commandBuilder.ExpectedCommands[10:]...)
+	commandBuilder := getFailureCommands(repoDir, "git rebase upstream/baseRef1", "rebase failure", 8, 10, 1)
 	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
@@ -314,9 +307,7 @@ func TestCmdAutoRebasePushFailure(t *testing.T) {
 func TestCmdAutoRebaseOwnedRemoteFetchFailure(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[2] = execWrapper.NewExpectedCommand(repoDir, "git fetch origin", "fetch failure", 1)
-	commandBuilder.ExpectedCommands = commandBuilder.ExpectedCommands[:3]
+	commandBuilder := getFailureCommands(repoDir, "git fetch origin", "fetch failure", 2, 13, 1)
 	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
@@ -334,9 +325,7 @@ func TestCmdAutoRebaseOwnedRemoteFetchFailure(t *testing.T) {
 func TestCmdAutoRebaseUpstreamRemoteFetchFailure(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[3] = execWrapper.NewExpectedCommand(repoDir, "git fetch upstream", "fetch upstream failure", 1)
-	commandBuilder.ExpectedCommands = commandBuilder.ExpectedCommands[:4]
+	commandBuilder := getFailureCommands(repoDir, "git fetch upstream", "fetch upstream failure", 3, 13, 1)
 	ts, writer := runBaseCommand(t, "", repoDir, commandBuilder, true, true)
 	defer ts.Close()
 	assert.Equal(
@@ -349,6 +338,13 @@ func TestCmdAutoRebaseUpstreamRemoteFetchFailure(t *testing.T) {
 		),
 		strings.Split(writer.String(), "\n"),
 	)
+}
+
+func getFailureCommands(repoDir, command, stdErr string, index, end, exitStatus int) *execWrapper.TestCommandBuilder {
+	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
+	commandBuilder.ExpectedCommands[index] = execWrapper.NewExpectedCommand(repoDir, command, stdErr, exitStatus)
+	commandBuilder.ExpectedCommands = append(commandBuilder.ExpectedCommands[:index+1], commandBuilder.ExpectedCommands[end:]...)
+	return commandBuilder
 }
 
 func TestCmdAutoRebaseAnalyzeRemotesOwnedNotFound(t *testing.T) {
@@ -413,13 +409,6 @@ func TestCmdAutoRebaseAnalyzeRemotesFailure(t *testing.T) {
 		),
 		strings.Split(writer.String(), "\n"),
 	)
-}
-
-func getCheckoutErrCommandBuilder(repoDir, message string, errorCode int) *execWrapper.TestCommandBuilder {
-	commandBuilder := &execWrapper.TestCommandBuilder{ExpectedCommands: getLocalChangesExpectedCommands(repoDir)}
-	commandBuilder.ExpectedCommands[6] = execWrapper.NewExpectedCommand(repoDir, "git checkout -b prp-ref1", message, errorCode)
-	commandBuilder.ExpectedCommands = append(commandBuilder.ExpectedCommands[:7], commandBuilder.ExpectedCommands[12])
-	return commandBuilder
 }
 
 func TestCmdAutoRebaseBadAPIURL(t *testing.T) {
