@@ -66,9 +66,7 @@ func CompleteRepoIgnoreBuild(c *cli.Context) {
 					continue
 				}
 
-				for _, buildName := range repo.IgnoredBuilds {
-					buildNames = append(buildNames, buildName)
-				}
+				buildNames = append(buildNames, repo.IgnoredBuilds...)
 			}
 		}
 

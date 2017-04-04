@@ -55,7 +55,7 @@ func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper execWrapper.CommandBuilder) 
 			continue
 		}
 
-		err = rebasePullRequest(&profile, output, c.App.ErrWriter, verboseWriter, cmdWrapper)
+		err = rebasePullRequest(output, c.App.ErrWriter, verboseWriter, cmdWrapper)
 		if err != nil {
 			fmt.Fprintf(c.App.ErrWriter, "Could not rebase PR #%d in %s/%s because: %v\n", output.PullRequestID, output.Repo.Owner, output.Repo.Name, err)
 			success = false
@@ -153,8 +153,8 @@ func handleCompletion(c *cli.Context) {
 	fmt.Fprintln(c.App.Writer, strings.Join(completions, "\n"))
 }
 
-func rebasePullRequest(profile *config.PrpConfigProfile, output *prInfo, errorWriter, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) error {
-	path, ownedRemote, upstreamRemote, localChanges, err := getRepoData(profile, output, verboseWriter, cmdWrapper)
+func rebasePullRequest(output *prInfo, errorWriter, verboseWriter io.Writer, cmdWrapper execWrapper.CommandBuilder) error {
+	path, ownedRemote, upstreamRemote, localChanges, err := getRepoData(output, verboseWriter, cmdWrapper)
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,6 @@ func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper
 }
 
 func getRepoData(
-	profile *config.PrpConfigProfile,
 	output *prInfo,
 	verboseWriter io.Writer,
 	cmdWrapper execWrapper.CommandBuilder,
@@ -339,11 +338,7 @@ func detectLocalChanges(path string, cmdWrapper execWrapper.CommandBuilder) (boo
 func runCommand(path string, cmdWrapper execWrapper.CommandBuilder, command ...string) error {
 	cmd := cmdWrapper.CreateCommand(path, command...)
 	_, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func getCurrentBranch(path string, cmdWrapper execWrapper.CommandBuilder) (string, error) {

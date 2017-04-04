@@ -163,7 +163,7 @@ func CommandNotFound(c *cli.Context, command string) {
 }
 
 // RootCompletion prints the list of root commands as the root completion method
-// This is similar to the deafult method, but it excludes aliases
+// This is similar to the default method, but it excludes aliases
 func RootCompletion(c *cli.Context) {
 	lastParam := os.Args[len(os.Args)-2]
 	if lastParam == "--config" {

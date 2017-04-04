@@ -73,10 +73,5 @@ func WriteConfig(outputFile string, configData *PrpConfig) error {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(outputFile, formattedConfig, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(outputFile, formattedConfig, 0644)
 }

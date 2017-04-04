@@ -24,7 +24,7 @@ func removeFile(t *testing.T, fileName string) {
 func getConfigWithFooProfile(t *testing.T) (config.PrpConfig, string) {
 	conf := config.PrpConfig{
 		Profiles: map[string]config.PrpConfigProfile{
-			"foo": config.PrpConfigProfile{
+			"foo": {
 				TrackedRepos: []config.PrpConfigRepo{},
 			},
 		},
@@ -39,7 +39,7 @@ func getConfigWithFooProfile(t *testing.T) (config.PrpConfig, string) {
 func getConfigWithTwoRepos(t *testing.T) (config.PrpConfig, string) {
 	conf := config.PrpConfig{
 		Profiles: map[string]config.PrpConfigProfile{
-			"foo": config.PrpConfigProfile{
+			"foo": {
 				TrackedRepos: []config.PrpConfigRepo{
 					{
 						Owner:         "foo",

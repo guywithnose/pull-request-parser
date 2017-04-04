@@ -73,9 +73,7 @@ func CompleteRepoRemoveIgnoredBuild(c *cli.Context) {
 			return
 		}
 
-		for _, buildName := range repo.IgnoredBuilds {
-			buildNames = append(buildNames, buildName)
-		}
+		buildNames = append(buildNames, repo.IgnoredBuilds...)
 
 		sort.Strings(buildNames)
 		fmt.Fprintln(c.App.Writer, strings.Join(buildNames, "\n"))

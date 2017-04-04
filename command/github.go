@@ -30,11 +30,11 @@ type prInfo struct {
 	HeadSSHURL      string
 	Approvals       int
 	Rebased         bool
-	BuildInfo       map[string]bool
+	Hidden          bool
 	NeedsMyApproval bool
+	BuildInfo       map[string]bool
 	Labels          []string
 	IgnoredBuilds   []string
-	Hidden          bool
 }
 
 func getGithubClient(ctx context.Context, token, apiURL *string, useCache bool) (*github.Client, error) {

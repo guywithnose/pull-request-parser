@@ -23,7 +23,7 @@ func TestCmdProfileUpdate(t *testing.T) {
 
 	expectedConfigFile := config.PrpConfig{
 		Profiles: map[string]config.PrpConfigProfile{
-			"foo": config.PrpConfigProfile{
+			"foo": {
 				Token:        "abc",
 				TrackedRepos: []config.PrpConfigRepo{},
 				APIURL:       "https://api.com",
