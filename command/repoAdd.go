@@ -71,14 +71,11 @@ func CompleteRepoAdd(c *cli.Context) {
 	suggestionChan := make(chan *string)
 	for _, repo := range allRepos {
 		go func(repo *github.Repository) {
-			if !*repo.Fork {
-				suggestionChan <- nil
-				return
-			}
+			firstArg := c.NArg() == 0
 
 			login := *repo.Owner.Login
 			name := *repo.Name
-			suggestionChan <- parseRepository(ctx, client, login, name, c.Args().Get(0), c.NArg() == 0, profile.TrackedRepos)
+			suggestionChan <- parseRepository(ctx, client, login, name, c.Args().Get(0), *repo.Fork, firstArg, profile.TrackedRepos)
 		}(repo)
 	}
 
@@ -94,7 +91,26 @@ func CompleteRepoAdd(c *cli.Context) {
 	fmt.Fprintln(c.App.Writer, strings.Join(suggestionList, "\n"))
 }
 
-func parseRepository(ctx context.Context, client *github.Client, login, name, repoName string, firstArg bool, trackedRepos []config.PrpConfigRepo) *string {
+func parseRepository(
+	ctx context.Context,
+	client *github.Client,
+	login,
+	name,
+	ownerParam string,
+	isFork,
+	firstArg bool,
+	trackedRepos []config.PrpConfigRepo,
+) *string {
+	if !isFork {
+		if firstArg {
+			return &login
+		} else if ownerParam == login {
+			return &name
+		}
+
+		return nil
+	}
+
 	fullRepository, _, err := client.Repositories.Get(ctx, login, name)
 	if err != nil {
 		return nil
@@ -108,7 +124,7 @@ func parseRepository(ctx context.Context, client *github.Client, login, name, re
 
 	if firstArg {
 		return fullRepository.Source.Owner.Login
-	} else if repoName == *fullRepository.Source.Owner.Login {
+	} else if ownerParam == *fullRepository.Source.Owner.Login {
 		return fullRepository.Source.Name
 	}
 

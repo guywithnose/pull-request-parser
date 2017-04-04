@@ -66,7 +66,7 @@ func TestCompleteRepoAddOwner(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, "source\n", writer.String())
+	assert.Equal(t, "bar\nown\nsource\n", writer.String())
 }
 
 func TestCompleteRepoAddName(t *testing.T) {
@@ -80,6 +80,19 @@ func TestCompleteRepoAddName(t *testing.T) {
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "rep\n", writer.String())
+}
+
+func TestCompleteRepoAddNameOwnRepos(t *testing.T) {
+	ts := getRepoAddTestServer("")
+	defer ts.Close()
+	_, configFileName := getConfigWithAPIURL(t, ts.URL)
+	defer removeFile(t, configFileName)
+	set := getBaseFlagSet(configFileName)
+	assert.Nil(t, set.Parse([]string{"own"}))
+	os.Args = []string{"repo", "add", "own", "--completion"}
+	app, writer, _ := appWithTestWriters()
+	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	assert.Equal(t, "foo\n", writer.String())
 }
 
 func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
@@ -152,7 +165,7 @@ func TestCompleteRepoAddRepoFailure(t *testing.T) {
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
 	CompleteRepoAdd(cli.NewContext(app, set, nil))
-	assert.Equal(t, "\n", writer.String())
+	assert.Equal(t, "bar\nown\n", writer.String())
 }
 
 func TestCompleteRepoAddBadApiUrl(t *testing.T) {
@@ -184,6 +197,7 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 				newRepository("own", "rep", true),
 				newRepository("own", "bar", true),
 				newRepository("own", "foo", false),
+				newRepository("bar", "goo", false),
 			}
 			bytes, _ := json.Marshal(repos)
 			w.Header().Set(
