@@ -1,14 +1,14 @@
-hash: 142bf2a68ffe838e7b65be3cf23e95f06d6bf415536ae09aa33d34a2da54b570
-updated: 2017-03-20T12:42:28.898577779-04:00
+hash: 78a0a835706d45b37770039cf82e3c86db2304022ab7d46788d4775452efda2a
+updated: 2017-04-04T23:50:13.567382128-04:00
 imports:
 - name: github.com/golang/protobuf
-  version: c9c7427a2a70d2eb3bafa0ab2dc163e45f143317
+  version: 2bba0603135d7d7f5cb73b2125beeda19c09f4ef
   subpackages:
   - proto
 - name: github.com/google/btree
   version: 316fb6d3f031ae8f4d457c6c5186b9e3ded70435
 - name: github.com/google/go-github
-  version: 69fd0adc8ab606780549a072f2e3b3f795d75832
+  version: 12363ffc10018c93407ebf303040586d55957271
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -19,6 +19,8 @@ imports:
   version: d02018f006d98f58512bf3adfc171d88d17626df
   subpackages:
   - diskcache
+- name: github.com/guywithnose/commandBuilder
+  version: 72671e92f93f868498562b56fdf6ad43047e010c
 - name: github.com/peterbourgon/diskv
   version: 937c5a91d7fb1477fa6d2bb71410b2ae7a0f2143
 - name: github.com/stretchr/testify
@@ -26,22 +28,24 @@ imports:
   subpackages:
   - assert
 - name: github.com/urfave/cli
-  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+  version: 8ba6f23b6e36d03666a14bd9421f5e3efcb59aca
 - name: golang.org/x/net
-  version: d379faa25cbdc04d653984913a2ceb43b0bc46d7
+  version: ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d
   subpackages:
   - context
 - name: golang.org/x/oauth2
-  version: 30fcca6531eb4bb278493c9fb299295b3b145934
+  version: 7fdf09982454086d5570c7db3e11f360194830ca
   subpackages:
   - internal
 - name: google.golang.org/appengine
-  version: b79c28f0197795b4050bfcd7c4c2209136c594b1
+  version: 56d253d1dd14aa01937e12c73a0971bcfd797ff2
   subpackages:
   - internal
+  - internal/app_identity
   - internal/base
   - internal/datastore
   - internal/log
+  - internal/modules
   - internal/remote_api
   - internal/urlfetch
   - urlfetch

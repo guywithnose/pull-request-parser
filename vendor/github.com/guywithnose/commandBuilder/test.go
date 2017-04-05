@@ -1,24 +1,23 @@
-package execWrapper
+package commandBuilder
 
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
-// TestCommandBuilder is used for testing code that runs system commands without actually running the commands
-type TestCommandBuilder struct {
+// Test is used for testing code that runs system commands without actually running the commands
+type Test struct {
 	ExpectedCommands []*ExpectedCommand
 	Errors           []error
 }
 
 // TestCommand emulates an os.exec.Cmd, but returns mock data
 type TestCommand struct {
-	cmdBuilder      *TestCommandBuilder
+	cmdBuilder      *Test
 	Dir             string
 	expectedCommand *ExpectedCommand
 }
@@ -32,7 +31,7 @@ type ExpectedCommand struct {
 }
 
 // CreateCommand returns a TestCommand
-func (testBuilder *TestCommandBuilder) CreateCommand(path string, command ...string) Command {
+func (testBuilder *Test) CreateCommand(path string, command ...string) Command {
 	var expectedCommand *ExpectedCommand
 	commandString := strings.Join(command, " ")
 	if len(testBuilder.ExpectedCommands) == 0 {
@@ -71,27 +70,16 @@ func (cmd TestCommand) CombinedOutput() ([]byte, error) {
 
 // NewExpectedCommand returns a new ExpectedCommand
 func NewExpectedCommand(path, command, output string, exitCode int) *ExpectedCommand {
-	var exitError error
+	var err error
 	if exitCode == -1 {
-		exitError = errors.New("Error running command")
+		err = errors.New("Error running command")
 	} else if exitCode != 0 {
-		script := []byte("#!/bin/bash\nexit $1")
-		scriptFileName := fmt.Sprintf("%s/returnCode", os.TempDir())
-		err := ioutil.WriteFile(scriptFileName, script, 0777)
-		if err != nil {
-			panic(err)
-		}
-
-		//TODO this doesn't seem to work
-		cmd := exec.Command(scriptFileName, strconv.Itoa(exitCode))
-		exitError = cmd.Run()
-		if exitErr, ok := exitError.(*exec.ExitError); ok {
+		cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", strconv.Itoa(exitCode))
+		cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+		err = cmd.Run()
+		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitErr.Stderr = []byte(output)
-			exitError = exitErr
-		}
-		err = os.Remove(scriptFileName)
-		if err != nil {
-			panic(err)
+			err = exitErr
 		}
 	}
 
@@ -99,6 +87,26 @@ func NewExpectedCommand(path, command, output string, exitCode int) *ExpectedCom
 		command: command,
 		output:  []byte(output),
 		path:    path,
-		error:   exitError,
+		error:   err,
 	}
+}
+
+// ErrorCodeHelper exits with a specified error code
+// This is used in tests that require a command to return an error code other than 0
+// To use this the test must include a test like this:
+//
+// func TestHelperProcess(*testing.T) {
+//     commandBuilder.ErrorCodeHelper()
+// }
+func ErrorCodeHelper() {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		return
+	}
+
+	code, err := strconv.Atoi(os.Args[3])
+	if err != nil {
+		code = 1
+	}
+
+	defer os.Exit(code)
 }

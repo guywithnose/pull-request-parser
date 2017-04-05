@@ -12,7 +12,6 @@ gometalinter --vendored-linters \
     --enable gofmt \
     --enable golint \
     --enable gosimple \
-    --enable gotype \
     --enable ineffassign \
     --enable interfacer \
     --enable lll --line-length=160 \
@@ -26,4 +25,4 @@ gometalinter --vendored-linters \
     --enable vet \
     --enable vetshadow \
     --deadline=60s \
-    config command execWrapper prp
+    config command prp
