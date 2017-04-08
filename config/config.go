@@ -67,11 +67,6 @@ func Validate(configData *PrpConfig) {
 
 // WriteConfig saves a PrpConfig to a file
 func WriteConfig(outputFile string, configData *PrpConfig) error {
-	formattedConfig, err := json.MarshalIndent(configData, "", "  ")
-	if err != nil {
-		// This should never happen
-		panic(err)
-	}
-
+	formattedConfig, _ := json.MarshalIndent(configData, "", "  ")
 	return ioutil.WriteFile(outputFile, formattedConfig, 0644)
 }
