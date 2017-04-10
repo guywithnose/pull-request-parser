@@ -71,7 +71,7 @@ func getExtraData(client *github.Client, user *github.User, filterRebased bool, 
 
 	wg.Add(1)
 	go func(output *prInfo) {
-		handleComments(client, user, output)
+		handleApprovals(client, user, output)
 		wg.Done()
 	}(output)
 

@@ -95,35 +95,74 @@ func getRepoPullRequests(client *github.Client, owner, name string) (<-chan *git
 	return allPrs, errors
 }
 
-func handleComments(client *github.Client, user *github.User, output *prInfo) {
-	//TODO Also look at the new review comments
-	opt := &github.IssueListCommentsOptions{
-		ListOptions: github.ListOptions{PerPage: 100},
-	}
+func handleApprovals(client *github.Client, user *github.User, output *prInfo) {
+	allComments := handleComments(client, output)
+	allReviews := handleReviews(client, output)
 
-	allComments := []*github.IssueComment{}
-	for {
-		comments, resp, err := client.Issues.ListComments(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
-		if err != nil {
-			return
-		}
-
-		allComments = append(allComments, comments...)
-		if resp.NextPage == 0 {
-			break
-		}
-
-		opt.ListOptions.Page = resp.NextPage
-	}
-
-	for _, comment := range allComments {
+	approvingUsers := make(map[string]bool)
+	for comment := range allComments {
 		if strings.Contains(comment.GetBody(), ":+1:") || strings.Contains(comment.GetBody(), ":thumbsup:") || strings.Contains(comment.GetBody(), "LGTM") {
-			output.Approvals++
+			approvingUsers[comment.User.GetLogin()] = true
 			if comment.User.GetLogin() == user.GetLogin() {
 				output.NeedsMyApproval = false
 			}
 		}
 	}
+
+	for review := range allReviews {
+		if review.GetState() == "APPROVED" {
+			approvingUsers[review.User.GetLogin()] = true
+			if review.User.GetLogin() == user.GetLogin() {
+				output.NeedsMyApproval = false
+			}
+		}
+	}
+
+	output.Approvals = len(approvingUsers)
+}
+
+func handleComments(client *github.Client, output *prInfo) <-chan *github.IssueComment {
+	opt := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	allComments := make(chan *github.IssueComment)
+	go func() {
+		defer close(allComments)
+		for {
+			comments, resp, err := client.Issues.ListComments(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
+			if err != nil {
+				return
+			}
+
+			for _, comment := range comments {
+				allComments <- comment
+			}
+
+			if resp.NextPage == 0 {
+				return
+			}
+
+			opt.ListOptions.Page = resp.NextPage
+		}
+	}()
+	return allComments
+}
+
+func handleReviews(client *github.Client, output *prInfo) <-chan *github.PullRequestReview {
+	allReviews := make(chan *github.PullRequestReview)
+	go func() {
+		defer close(allReviews)
+		reviews, _, err := client.PullRequests.ListReviews(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID)
+		if err != nil {
+			return
+		}
+
+		for _, review := range reviews {
+			allReviews <- review
+		}
+	}()
+	return allReviews
 }
 
 func handleCommitComparision(client *github.Client, output *prInfo, filterRebased bool) {

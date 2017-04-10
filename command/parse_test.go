@@ -28,9 +28,9 @@ func TestCmdParse(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |L",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |L",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -53,9 +53,9 @@ func TestCmdParseVerbose(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title                         |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne                      |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |label2,label3",
-			"bar |2 |fooPrTwo                      |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |label4,label5,really-long-label",
-			"rep |1 |prOne                         |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |label1",
+			"bar |1 |fooPrOne                      |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |label2,label3",
+			"bar |2 |fooPrTwo                      |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |label4,label5,really-long-label",
+			"rep |1 |prOne                         |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |label1",
 			"rep |2 |Really long Pull Request Title|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -78,8 +78,8 @@ func TestCmdParseNeedRebase(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne   |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |L",
+			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne   |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |L",
 			"",
 		},
 		output,
@@ -101,7 +101,7 @@ func TestCmdParseUserFilter(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title|Owner|Branch|Target  |+1|UTD|Status|Review|Labels",
-			"rep |1 |prOne|guy  |ref1  |baseRef1|1 |N  |Y     |N     |L",
+			"rep |1 |prOne|guy  |ref1  |baseRef1|2 |N  |Y     |N     |L",
 			"",
 		},
 		output,
@@ -124,8 +124,8 @@ func TestCmdParseRepoFilter(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
+			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
 			"",
 		},
 		output,
@@ -148,9 +148,9 @@ func TestCmdParseRepoFilterMultiple(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |L",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |L",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -220,8 +220,8 @@ func TestCmdParsePullRequestFailure(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title   |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
+			"bar |1 |fooPrOne|fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo|fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
 			"",
 		},
 		output,
@@ -242,9 +242,9 @@ func TestCmdParseStatusFailure(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |      |N     |L",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |      |N     |L",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -266,9 +266,9 @@ func TestCmdParseLabelFailure(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -290,9 +290,9 @@ func TestCmdParseCommentFailure(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |Y  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |0 |N  |Y     |Y     |L",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |Y  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |Y     |Y     |L",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -314,9 +314,33 @@ func TestCmdParseCommitCompareFailure(t *testing.T) {
 		t,
 		[]string{
 			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
-			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|3 |N  |N/Y   |Y     |L,L",
-			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|0 |N  |      |Y     |L,L,RLL",
-			"rep |1 |prOne     |guy    |ref1   |baseRef1   |1 |N  |Y     |N     |L",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|4 |N  |N/Y   |N     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |L",
+			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
+			"",
+		},
+		output,
+	)
+}
+
+func TestCmdParseReviewFailure(t *testing.T) {
+	ts := getParseTestServer("/repos/foo/bar/pulls/1/reviews")
+	defer ts.Close()
+	_, configFileName := getConfigWithAPIURL(t, ts.URL)
+	defer removeFile(t, configFileName)
+	set := getBaseFlagSet(configFileName)
+	app, writer, _ := appWithTestWriters()
+	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	output := strings.Split(writer.String(), "\n")
+	sort.Strings(output[1:5])
+	assert.Equal(
+		t,
+		[]string{
+			"Repo|ID|Title     |Owner  |Branch |Target     |+1|UTD|Status|Review|Labels",
+			"bar |1 |fooPrOne  |fooGuy |fooRef1|fooBaseRef1|2 |Y  |N/Y   |Y     |L,L",
+			"bar |2 |fooPrTwo  |fooGuy2|fooRef2|fooBaseRef2|1 |N  |      |Y     |L,L,RLL",
+			"rep |1 |prOne     |guy    |ref1   |baseRef1   |2 |N  |Y     |N     |L",
 			"rep |2 |Really lon|guy2   |ref2   |baseRef2   |2 |Y  |N     |Y     |",
 			"",
 		},
@@ -438,6 +462,12 @@ func getParseTestServer(failureURL string) *httptest.Server {
 		}
 
 		response = handleCommentRequests(r, w, server)
+		if response != nil {
+			fmt.Fprint(w, *response)
+			return
+		}
+
+		response = handleReviewRequests(r, w, server)
 		if response != nil {
 			fmt.Fprint(w, *response)
 			return

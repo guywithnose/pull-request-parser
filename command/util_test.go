@@ -193,7 +193,7 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 	if r.URL.String() == "/repos/foo/bar/issues/1/comments?per_page=100" {
 		bytes, _ := json.Marshal([]*github.IssueComment{
 			newComment(":+1:", "guy"),
-			newComment(":thumbsup:", "guy"),
+			newComment(":thumbsup:", "guy2"),
 			newComment("LGTM", "guy"),
 		})
 		response := string(bytes)
@@ -203,7 +203,7 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 	if r.URL.String() == "/repos/own/rep/issues/2/comments?per_page=100" {
 		bytes, _ := json.Marshal([]*github.IssueComment{
 			newComment(":+1:", "guy"),
-			newComment("LGTM", "guy"),
+			newComment("LGTM", "guy2"),
 		})
 		response := string(bytes)
 		return &response
@@ -212,6 +212,54 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 	if r.URL.String() == "/repos/foo/bar/issues/2/comments?per_page=100" {
 		bytes, _ := json.Marshal([]*github.IssueComment{
 			newComment("foo", "guy"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	return nil
+}
+
+func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
+	if r.URL.String() == "/repos/own/rep/pulls/1/reviews" {
+		bytes, _ := json.Marshal([]*github.PullRequestReview{
+			newReview("guy", "APPROVED"),
+		})
+		w.Header().Set(
+			"Link",
+			fmt.Sprintf(
+				`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="next", `+
+					`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="last"`,
+				server.URL,
+				server.URL,
+			),
+		)
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/pulls/1/reviews" {
+		bytes, _ := json.Marshal([]*github.PullRequestReview{
+			newReview("guy", "APPROVED"),
+			newReview("own", "APPROVED"),
+			newReview("guy2", "APPROVED"),
+			newReview("guy3", "APPROVED"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/own/rep/pulls/2/reviews" {
+		bytes, _ := json.Marshal([]*github.PullRequestReview{
+			newReview("guy", "APPROVED"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/pulls/2/reviews" {
+		bytes, _ := json.Marshal([]*github.PullRequestReview{
+			newReview("guy2", "APPROVED"),
 		})
 		response := string(bytes)
 		return &response
@@ -356,6 +404,13 @@ func newComment(body, user string) *github.IssueComment {
 	return &github.IssueComment{
 		Body: &body,
 		User: newUser(user),
+	}
+}
+
+func newReview(user, state string) *github.PullRequestReview {
+	return &github.PullRequestReview{
+		User:  newUser(user),
+		State: &state,
 	}
 }
 
