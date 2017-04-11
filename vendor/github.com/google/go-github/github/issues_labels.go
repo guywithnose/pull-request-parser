@@ -12,7 +12,6 @@ import (
 
 // Label represents a GitHub label on an Issue
 type Label struct {
-	ID    *int    `json:"id,omitempty"`
 	URL   *string `json:"url,omitempty"`
 	Name  *string `json:"name,omitempty"`
 	Color *string `json:"color,omitempty"`

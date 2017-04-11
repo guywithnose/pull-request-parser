@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/guywithnose/commandBuilder"
 	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/guywithnose/pull-request-parser/config"
+	"github.com/guywithnose/runner"
 	"github.com/urfave/cli"
 )
 
@@ -141,7 +141,7 @@ var Commands = []cli.Command{
 		Name:         "auto-rebase",
 		Aliases:      []string{"a", "auto"},
 		Usage:        "Automatically rebase your pull requests with local path set",
-		Action:       command.CmdAutoRebase(commandBuilder.Real{}),
+		Action:       command.CmdAutoRebase(runner.Real{}),
 		BashComplete: command.CompleteAutoRebase,
 		Flags: []cli.Flag{
 			cli.StringSliceFlag{

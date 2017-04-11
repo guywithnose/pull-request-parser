@@ -13,7 +13,6 @@ type Installation struct {
 	Account         *User   `json:"account,omitempty"`
 	AccessTokensURL *string `json:"access_tokens_url,omitempty"`
 	RepositoriesURL *string `json:"repositories_url,omitempty"`
-	HTMLURL         *string `json:"html_url,omitempty"`
 }
 
 func (i Installation) String() string {

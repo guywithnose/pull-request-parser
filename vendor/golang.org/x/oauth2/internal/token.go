@@ -122,13 +122,6 @@ var brokenAuthHeaderProviders = []string{
 	"https://sandbox.codeswholesale.com/oauth/token",
 }
 
-// brokenAuthHeaderDomains lists broken providers that issue dynamic endpoints.
-var brokenAuthHeaderDomains = []string{
-	".force.com",
-	".okta.com",
-	".oktapreview.com",
-}
-
 func RegisterBrokenAuthHeaderProvider(tokenURL string) {
 	brokenAuthHeaderProviders = append(brokenAuthHeaderProviders, tokenURL)
 }
@@ -146,14 +139,6 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 		if strings.HasPrefix(tokenURL, s) {
 			// Some sites fail to implement the OAuth2 spec fully.
 			return false
-		}
-	}
-
-	if u, err := url.Parse(tokenURL); err == nil {
-		for _, s := range brokenAuthHeaderDomains {
-			if strings.HasSuffix(u.Host, s) {
-				return false
-			}
 		}
 	}
 

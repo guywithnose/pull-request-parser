@@ -14,20 +14,20 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/guywithnose/commandBuilder"
 	"github.com/guywithnose/pull-request-parser/config"
+	"github.com/guywithnose/runner"
 	"github.com/urfave/cli"
 )
 
 // CmdAutoRebase parses the pull requests
-func CmdAutoRebase(cmdWrapper commandBuilder.Builder) func(*cli.Context) error {
+func CmdAutoRebase(cmdWrapper runner.Builder) func(*cli.Context) error {
 	return func(c *cli.Context) error {
 		return cmdAutoRebaseHelper(c, cmdWrapper)
 	}
 }
 
 // CmdAutoRebase parses the pull requests
-func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper commandBuilder.Builder) error {
+func cmdAutoRebaseHelper(c *cli.Context, cmdWrapper runner.Builder) error {
 	configData, profileName, err := loadProfile(c)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func handleCompletion(c *cli.Context) {
 	fmt.Fprintln(c.App.Writer, strings.Join(completions, "\n"))
 }
 
-func rebasePullRequest(output *prInfo, errorWriter, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) error {
+func rebasePullRequest(output *prInfo, errorWriter, verboseWriter io.Writer, cmdWrapper runner.Builder) error {
 	path, ownedRemote, upstreamRemote, localChanges, err := getRepoData(output, verboseWriter, cmdWrapper)
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ func rebasePullRequest(output *prInfo, errorWriter, verboseWriter io.Writer, cmd
 	return handleRebase(path, ownedRemote, upstreamRemote, tempBranch, output, verboseWriter, cmdWrapper)
 }
 
-func handleRebase(path, ownedRemote, upstreamRemote, tempBranch string, output *prInfo, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) error {
+func handleRebase(path, ownedRemote, upstreamRemote, tempBranch string, output *prInfo, verboseWriter io.Writer, cmdWrapper runner.Builder) error {
 	myRemoteBranch := fmt.Sprintf("%s/%s", ownedRemote, output.Branch)
 	fmt.Fprintf(verboseWriter, "Resetting code to %s\n", myRemoteBranch)
 	err := runCommand(path, cmdWrapper, "git", "reset", "--hard", myRemoteBranch)
@@ -202,7 +202,7 @@ func handleRebase(path, ownedRemote, upstreamRemote, tempBranch string, output *
 	return nil
 }
 
-func fetchRemote(path, remoteName string, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) error {
+func fetchRemote(path, remoteName string, verboseWriter io.Writer, cmdWrapper runner.Builder) error {
 	fmt.Fprintf(verboseWriter, "Fetching from remote: %s\n", remoteName)
 	err := runCommand(path, cmdWrapper, "git", "fetch", remoteName)
 	if err != nil {
@@ -220,7 +220,7 @@ func wrapExitError(err error, extra string) error {
 	return errors.New(extra)
 }
 
-func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) (string, string, error) {
+func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper runner.Builder) (string, string, error) {
 	fmt.Fprintln(verboseWriter, "Saving current branch name")
 	currentBranchName, err := getCurrentBranch(path, cmdWrapper)
 	if err != nil {
@@ -244,7 +244,7 @@ func checkoutTempBranch(path, branch string, verboseWriter io.Writer, cmdWrapper
 	return currentBranchName, tempBranch, nil
 }
 
-func getRepoData(output *prInfo, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) (string, string, string, bool, error) {
+func getRepoData(output *prInfo, verboseWriter io.Writer, cmdWrapper runner.Builder) (string, string, string, bool, error) {
 	fmt.Fprintln(verboseWriter, "Requesting repo data from config")
 	if output.Repo.LocalPath == "" {
 		return "", "", "", false, errors.New("Path was not set for this repo")
@@ -283,7 +283,7 @@ func getRepoData(output *prInfo, verboseWriter io.Writer, cmdWrapper commandBuil
 	return output.Repo.LocalPath, ownedRemote, upstreamRemote, localChanges, nil
 }
 
-func cleanUp(currentBranchName, tempBranch, path string, errorWriter, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) {
+func cleanUp(currentBranchName, tempBranch, path string, errorWriter, verboseWriter io.Writer, cmdWrapper runner.Builder) {
 	fmt.Fprintf(verboseWriter, "Going back to branch %s\n", currentBranchName)
 	err := runCommand(path, cmdWrapper, "git", "checkout", currentBranchName)
 	if err != nil {
@@ -298,7 +298,7 @@ func cleanUp(currentBranchName, tempBranch, path string, errorWriter, verboseWri
 	}
 }
 
-func popStash(path string, errorWriter, verboseWriter io.Writer, cmdWrapper commandBuilder.Builder) {
+func popStash(path string, errorWriter, verboseWriter io.Writer, cmdWrapper runner.Builder) {
 	fmt.Fprintln(verboseWriter, "Popping the stash")
 	err := runCommand(path, cmdWrapper, "git", "stash", "pop")
 	if err != nil {
@@ -306,8 +306,8 @@ func popStash(path string, errorWriter, verboseWriter io.Writer, cmdWrapper comm
 	}
 }
 
-func detectLocalChanges(path string, cmdWrapper commandBuilder.Builder) (bool, error) {
-	localChangesCommand := cmdWrapper.CreateCommand(path, "git", "diff-index", "--quiet", "HEAD")
+func detectLocalChanges(path string, cmdWrapper runner.Builder) (bool, error) {
+	localChangesCommand := cmdWrapper.New(path, "git", "diff-index", "--quiet", "HEAD")
 	_, err := localChangesCommand.Output()
 	if err != nil {
 		code := getErrorCode(err)
@@ -321,14 +321,14 @@ func detectLocalChanges(path string, cmdWrapper commandBuilder.Builder) (bool, e
 	return false, nil
 }
 
-func runCommand(path string, cmdWrapper commandBuilder.Builder, command ...string) error {
-	cmd := cmdWrapper.CreateCommand(path, command...)
+func runCommand(path string, cmdWrapper runner.Builder, command ...string) error {
+	cmd := cmdWrapper.New(path, command...)
 	_, err := cmd.Output()
 	return err
 }
 
-func getCurrentBranch(path string, cmdWrapper commandBuilder.Builder) (string, error) {
-	getCurrentBranch := cmdWrapper.CreateCommand(path, "git", "symbolic-ref", "HEAD")
+func getCurrentBranch(path string, cmdWrapper runner.Builder) (string, error) {
+	getCurrentBranch := cmdWrapper.New(path, "git", "symbolic-ref", "HEAD")
 	currentBranchOutput, err := getCurrentBranch.CombinedOutput()
 	if err != nil {
 		code := getErrorCode(err)
@@ -352,8 +352,8 @@ func getErrorCode(err error) int {
 	return -1
 }
 
-func getRemotes(path string, cmdWrapper commandBuilder.Builder, output *prInfo) (string, string, error) {
-	getRemotes := cmdWrapper.CreateCommand(path, "git", "remote", "-v")
+func getRemotes(path string, cmdWrapper runner.Builder, output *prInfo) (string, string, error) {
+	getRemotes := cmdWrapper.New(path, "git", "remote", "-v")
 	remotesOutput, err := getRemotes.CombinedOutput()
 	if err != nil {
 		return "", "", fmt.Errorf("Unable to analyze remotes in %s\n%s", path, string(remotesOutput))

@@ -158,11 +158,11 @@ func (s *RepositoriesService) GetContents(ctx context.Context, owner, repo, path
 	}
 	fileUnmarshalError := json.Unmarshal(rawJSON, &fileContent)
 	if fileUnmarshalError == nil {
-		return fileContent, nil, resp, nil
+		return fileContent, nil, resp, fileUnmarshalError
 	}
 	directoryUnmarshalError := json.Unmarshal(rawJSON, &directoryContent)
 	if directoryUnmarshalError == nil {
-		return nil, directoryContent, resp, nil
+		return nil, directoryContent, resp, directoryUnmarshalError
 	}
 	return nil, nil, resp, fmt.Errorf("unmarshalling failed for both file and directory content: %s and %s ", fileUnmarshalError, directoryUnmarshalError)
 }
@@ -248,11 +248,10 @@ func (s *RepositoriesService) GetArchiveLink(ctx context.Context, owner, repo st
 	}
 	var resp *http.Response
 	// Use http.DefaultTransport if no custom Transport is configured
-	ctx, req = withContext(ctx, req)
 	if s.client.client.Transport == nil {
-		resp, err = http.DefaultTransport.RoundTrip(req)
+		resp, err = http.DefaultTransport.RoundTrip(req.WithContext(ctx))
 	} else {
-		resp, err = s.client.client.Transport.RoundTrip(req)
+		resp, err = s.client.client.Transport.RoundTrip(req.WithContext(ctx))
 	}
 	if err != nil {
 		return nil, nil, err
