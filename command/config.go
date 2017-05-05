@@ -14,7 +14,7 @@ func loadConfig(c *cli.Context) (*config.PrpConfig, error) {
 		return nil, cli.NewExitError("You must specify a config file", 1)
 	}
 
-	configData, err := config.LoadConfigFromFile(configFile)
+	configData, err := config.LoadFromFile(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func loadProfile(c *cli.Context) (*config.PrpConfig, *string, error) {
 	return configData, &profileName, nil
 }
 
-func loadRepo(profile *config.PrpConfigProfile, repoName string) (*config.PrpConfigRepo, int, error) {
+func loadRepo(profile *config.Profile, repoName string) (*config.Repo, int, error) {
 	repoNameParts := strings.Split(repoName, "/")
 	if len(repoNameParts) == 2 {
 		for index, repo := range profile.TrackedRepos {

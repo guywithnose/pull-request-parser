@@ -29,6 +29,22 @@ func CmdRepoRemoveIgnoredBuild(c *cli.Context) error {
 		return err
 	}
 
+	ignoredBuildIndex := getIgnoredBuildIndex(repo, buildName)
+
+	if ignoredBuildIndex == -1 {
+		return cli.NewExitError(fmt.Sprintf("%s is not ignoring %s", repoName, buildName), 1)
+	}
+
+	repo.IgnoredBuilds[ignoredBuildIndex] = repo.IgnoredBuilds[len(repo.IgnoredBuilds)-1]
+	repo.IgnoredBuilds = repo.IgnoredBuilds[:len(repo.IgnoredBuilds)-1]
+
+	profile.TrackedRepos[repoIndex] = *repo
+	configData.Profiles[*profileName] = profile
+
+	return configData.Write(c.GlobalString("config"))
+}
+
+func getIgnoredBuildIndex(repo *config.Repo, buildName string) int {
 	foundIndex := -1
 	for index, build := range repo.IgnoredBuilds {
 		if build == buildName {
@@ -37,17 +53,7 @@ func CmdRepoRemoveIgnoredBuild(c *cli.Context) error {
 		}
 	}
 
-	if foundIndex == -1 {
-		return cli.NewExitError(fmt.Sprintf("%s is not ignoring %s", repoName, buildName), 1)
-	}
-
-	repo.IgnoredBuilds[foundIndex] = repo.IgnoredBuilds[len(repo.IgnoredBuilds)-1]
-	repo.IgnoredBuilds = repo.IgnoredBuilds[:len(repo.IgnoredBuilds)-1]
-
-	profile.TrackedRepos[repoIndex] = *repo
-	configData.Profiles[*profileName] = profile
-
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return foundIndex
 }
 
 // CompleteRepoRemoveIgnoredBuild handles bash autocompletion for the 'profile repo remove-ignored-build' command

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guywithnose/pull-request-parser/config"
 	"github.com/urfave/cli"
 )
 
@@ -31,7 +30,7 @@ func CmdRepoRemove(c *cli.Context) error {
 	profile.TrackedRepos = profile.TrackedRepos[:len(profile.TrackedRepos)-1]
 	configData.Profiles[*profileName] = profile
 
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return configData.Write(c.GlobalString("config"))
 }
 
 // CompleteRepoRemove handles bash autocompletion for the 'profile repo remove' command

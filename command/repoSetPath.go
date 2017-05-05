@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/guywithnose/pull-request-parser/config"
 	"github.com/urfave/cli"
 )
 
@@ -29,6 +28,19 @@ func CmdRepoSetPath(c *cli.Context) error {
 		return err
 	}
 
+	err = checkPath(localPath)
+	if err != nil {
+		return err
+	}
+
+	repo.LocalPath = localPath
+	profile.TrackedRepos[repoIndex] = *repo
+	configData.Profiles[*profileName] = profile
+
+	return configData.Write(c.GlobalString("config"))
+}
+
+func checkPath(localPath string) error {
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
 		return cli.NewExitError(fmt.Sprintf("Path does not exist: %s", localPath), 1)
 	}
@@ -37,11 +49,7 @@ func CmdRepoSetPath(c *cli.Context) error {
 		return cli.NewExitError(fmt.Sprintf("Path is not a git repo: %s", localPath), 1)
 	}
 
-	repo.LocalPath = localPath
-	profile.TrackedRepos[repoIndex] = *repo
-	configData.Profiles[*profileName] = profile
-
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return nil
 }
 
 // CompleteRepoSetPath handles bash autocompletion for the 'profile repo set-path' command

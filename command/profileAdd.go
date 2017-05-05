@@ -31,23 +31,18 @@ func CmdProfileAdd(c *cli.Context) error {
 		return cli.NewExitError(fmt.Sprintf("Profile %s already exists", profileName), 1)
 	}
 
-	newProfile := config.PrpConfigProfile{Token: token, TrackedRepos: []config.PrpConfigRepo{}, APIURL: c.String("apiUrl")}
+	newProfile := config.Profile{Token: token, TrackedRepos: []config.Repo{}, APIURL: c.String("apiUrl")}
 
 	configData.Profiles[profileName] = newProfile
 
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return configData.Write(c.GlobalString("config"))
 }
 
 // CompleteProfileAdd handles bash autocompletion for the 'profile add' command
 func CompleteProfileAdd(c *cli.Context) {
 	lastParam := os.Args[len(os.Args)-2]
 	if lastParam != "--token" && lastParam != "--apiUrl" {
-		for _, flag := range c.App.Command("add").Flags {
-			name := strings.Split(flag.GetName(), ",")[0]
-			if !c.IsSet(name) {
-				fmt.Fprintf(c.App.Writer, "--%s\n", name)
-			}
-		}
+		completeProfileAddFlags(c)
 		return
 	}
 
@@ -56,8 +51,14 @@ func CompleteProfileAdd(c *cli.Context) {
 		return
 	}
 
+	suggestionList := completeProfileData(lastParam, configData.Profiles)
+
+	fmt.Fprintln(c.App.Writer, strings.Join(suggestionList, "\n"))
+}
+
+func completeProfileData(lastParam string, profiles map[string]config.Profile) []string {
 	suggestionList := []string{}
-	for _, profile := range configData.Profiles {
+	for _, profile := range profiles {
 		if lastParam == "--token" {
 			suggestionList = append(suggestionList, profile.Token)
 		}
@@ -69,5 +70,14 @@ func CompleteProfileAdd(c *cli.Context) {
 		}
 	}
 
-	fmt.Fprintln(c.App.Writer, strings.Join(suggestionList, "\n"))
+	return suggestionList
+}
+
+func completeProfileAddFlags(c *cli.Context) {
+	for _, flag := range c.App.Command("add").Flags {
+		name := strings.Split(flag.GetName(), ",")[0]
+		if !c.IsSet(name) {
+			fmt.Fprintf(c.App.Writer, "--%s\n", name)
+		}
+	}
 }

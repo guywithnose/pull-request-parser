@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/guywithnose/runner"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
@@ -76,7 +77,7 @@ func TestCmdAutoRebasePullRequestNumber(t *testing.T) {
 	set.Int("pull-request-number", 2, "doc")
 	app, writer, _ := appWithTestWriters()
 	cb := &runner.Test{ExpectedCommands: []*runner.ExpectedCommand{}}
-	assert.Nil(t, CmdAutoRebase(cb)(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil)))
 	assert.Equal(t, []*runner.ExpectedCommand{}, cb.ExpectedCommands)
 	assert.Equal(t, []error(nil), cb.Errors)
 	assert.Equal(t, "", writer.String())
@@ -417,7 +418,7 @@ func TestCmdAutoRebaseBadAPIURL(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app := cli.NewApp()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "parse %s/mockApi: invalid URL escape \"%s/\"")
 }
 
@@ -429,7 +430,7 @@ func TestCmdAutoRebaseUserFailure(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app := cli.NewApp()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, fmt.Sprintf("GET %s/user: 500  []", ts.URL))
 }
 
@@ -440,7 +441,7 @@ func TestCmdAutoRebaseUsage(t *testing.T) {
 	assert.Nil(t, set.Parse([]string{"foo"}))
 	app := cli.NewApp()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Usage: \"prp auto-rebase\"")
 }
 
@@ -448,7 +449,7 @@ func TestCmdAutoRebaseNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	app := cli.NewApp()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "You must specify a config file")
 }
 
@@ -460,9 +461,9 @@ func TestCmdAutoRebaseNoPath(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, _, writer := appWithTestWriters()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Unable to rebase all pull requests")
-	assert.Equal(t, "Could not rebase PR #1 in own/rep because: Path was not set for this repo\n", writer.String())
+	assert.Equal(t, "Could not rebase PR #1 in own/rep because: Path was not set for repo: own/rep\n", writer.String())
 }
 
 func TestCmdAutoRebaseInvalidPath(t *testing.T) {
@@ -474,7 +475,7 @@ func TestCmdAutoRebaseInvalidPath(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, _, writer := appWithTestWriters()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Unable to rebase all pull requests")
 	assert.Equal(t, "Could not rebase PR #1 in own/rep because: Path does not exist: /tmp/repo\n", writer.String())
 }
@@ -490,7 +491,7 @@ func TestCmdAutoRebaseNonGitPath(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, _, writer := appWithTestWriters()
 	cb := &runner.Test{}
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Unable to rebase all pull requests")
 	assert.Equal(t, "Could not rebase PR #1 in own/rep because: Path is not a git repo: /tmp/repo\n", writer.String())
 }
@@ -511,7 +512,7 @@ func TestCompleteAutoRebaseFlags(t *testing.T) {
 		},
 	}
 	os.Args = []string{"auto-rebase", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "--repo\n--pull-request-number\n--verbose\n", writer.String())
 }
 
@@ -523,7 +524,7 @@ func TestCompleteAutoRebaseRepo(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--repo", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "own/rep\n", writer.String())
 }
 
@@ -537,7 +538,7 @@ func TestCompleteAutoRebaseRepoMulti(t *testing.T) {
 	set.Var(&repoFlag, "repo", "doc")
 	app, _, writer := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--repo", "own/rep", "--repo", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -549,7 +550,7 @@ func TestCompleteAutoRebasePullRequestNumber(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "1\n", writer.String())
 }
 
@@ -557,7 +558,7 @@ func TestCompleteAutoRebaseNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -567,7 +568,7 @@ func TestCompleteAutoRebaseBadAPIURL(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"auto-rebase", "--pull-request-number", "--completion"}
-	CompleteAutoRebase(cli.NewContext(app, set, nil))
+	command.CompleteAutoRebase(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -625,7 +626,7 @@ func getAutoRebaseTestServer(failureURL string) *httptest.Server {
 			return
 		}
 
-		response = handleCommitsComparisonRequests(r)
+		response = handleCommitsComparisonRequests(r, w, server)
 		if response != nil {
 			fmt.Fprint(w, *response)
 			return
@@ -687,7 +688,7 @@ func runBaseCommand(t *testing.T, failureURL, repoDir string, cb *runner.Test, v
 	set := getBaseFlagSet(configFileName)
 	set.Bool("verbose", verbose, "doc")
 	app, _, writer := appWithTestWriters()
-	err := CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
+	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
 	if expectedError {
 		assert.EqualError(t, err, "Unable to rebase all pull requests")
 	} else {

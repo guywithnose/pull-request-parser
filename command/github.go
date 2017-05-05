@@ -6,36 +6,12 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"strings"
-	"sync"
 
 	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/guywithnose/pull-request-parser/config"
 	"golang.org/x/oauth2"
 )
-
-type prInfo struct {
-	Repo            *config.PrpConfigRepo
-	PullRequestID   int
-	Title           string
-	Owner           string
-	Branch          string
-	TargetBranch    string
-	HeadLabel       string
-	BaseLabel       string
-	SHA             string
-	BaseSSHURL      string
-	HeadSSHURL      string
-	Approvals       int
-	Rebased         bool
-	Hidden          bool
-	NeedsMyApproval bool
-	BuildInfo       map[string]bool
-	Labels          []string
-	IgnoredBuilds   []string
-}
 
 func getGithubClient(token, apiURL *string, useCache bool) (*github.Client, error) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *token})
@@ -95,170 +71,6 @@ func getRepoPullRequests(client *github.Client, owner, name string) (<-chan *git
 	return allPrs, errors
 }
 
-func handleApprovals(client *github.Client, user *github.User, output *prInfo) {
-	allComments := handleComments(client, output)
-	allReviews := handleReviews(client, output)
-
-	approvingUsers := make(map[string]bool)
-	for comment := range allComments {
-		if strings.Contains(comment.GetBody(), ":+1:") || strings.Contains(comment.GetBody(), ":thumbsup:") || strings.Contains(comment.GetBody(), "LGTM") {
-			approvingUsers[comment.User.GetLogin()] = true
-			if comment.User.GetLogin() == user.GetLogin() {
-				output.NeedsMyApproval = false
-			}
-		}
-	}
-
-	for review := range allReviews {
-		if review.GetState() == "APPROVED" {
-			approvingUsers[review.User.GetLogin()] = true
-			if review.User.GetLogin() == user.GetLogin() {
-				output.NeedsMyApproval = false
-			}
-		}
-	}
-
-	output.Approvals = len(approvingUsers)
-}
-
-func handleComments(client *github.Client, output *prInfo) <-chan *github.IssueComment {
-	opt := &github.IssueListCommentsOptions{
-		ListOptions: github.ListOptions{PerPage: 100},
-	}
-
-	allComments := make(chan *github.IssueComment)
-	go func() {
-		defer close(allComments)
-		for {
-			comments, resp, err := client.Issues.ListComments(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, opt)
-			if err != nil {
-				return
-			}
-
-			for _, comment := range comments {
-				allComments <- comment
-			}
-
-			if resp.NextPage == 0 {
-				return
-			}
-
-			opt.ListOptions.Page = resp.NextPage
-		}
-	}()
-	return allComments
-}
-
-func handleReviews(client *github.Client, output *prInfo) <-chan *github.PullRequestReview {
-	allReviews := make(chan *github.PullRequestReview)
-	go func() {
-		defer close(allReviews)
-		reviews, _, err := client.PullRequests.ListReviews(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID)
-		if err != nil {
-			return
-		}
-
-		for _, review := range reviews {
-			allReviews <- review
-		}
-	}()
-	return allReviews
-}
-
-func handleCommitComparision(client *github.Client, output *prInfo, filterRebased bool) {
-	commitComparison, _, err := client.Repositories.CompareCommits(context.Background(), output.Repo.Owner, output.Repo.Name, output.HeadLabel, output.BaseLabel)
-	if err != nil {
-		return
-	}
-
-	output.Rebased = commitComparison.GetAheadBy() == 0
-	if filterRebased && output.Rebased {
-		output.Hidden = true
-	}
-}
-
-func handleLabels(client *github.Client, output *prInfo) {
-	labels, _, err := client.Issues.ListLabelsByIssue(context.Background(), output.Repo.Owner, output.Repo.Name, output.PullRequestID, nil)
-	if err != nil {
-		return
-	}
-
-	for _, label := range labels {
-		output.Labels = append(output.Labels, label.GetName())
-	}
-}
-
-func handleStatuses(client *github.Client, output *prInfo) {
-	statuses, _, err := client.Repositories.ListStatuses(context.Background(), output.Repo.Owner, output.Repo.Name, output.SHA, nil)
-	if err != nil {
-		return
-	}
-
-statusFor:
-	for _, status := range statuses {
-		for _, ignoredBuild := range output.IgnoredBuilds {
-			if ignoredBuild == status.GetContext() {
-				continue statusFor
-			}
-		}
-
-		if _, ok := output.BuildInfo[status.GetContext()]; !ok {
-			output.BuildInfo[status.GetContext()] = false
-		}
-
-		if status.GetState() == "success" {
-			output.BuildInfo[status.GetContext()] = true
-		}
-	}
-}
-
-func getBasePrData(client *github.Client, user *github.User, profile *config.PrpConfigProfile, errorWriter io.Writer) <-chan *prInfo {
-	outputChannel := make(chan *prInfo, 10)
-	go func() {
-		wg := sync.WaitGroup{}
-		for _, repo := range profile.TrackedRepos {
-			wg.Add(1)
-			go func(repo config.PrpConfigRepo) {
-				repoPrs, errors := getRepoPullRequests(client, repo.Owner, repo.Name)
-				go func() {
-					for {
-						err := <-errors
-						if err == nil {
-							return
-						}
-
-						fmt.Fprintln(errorWriter, err)
-					}
-				}()
-
-				for pr := range repoPrs {
-					outputChannel <- &prInfo{
-						Repo:            &repo,
-						PullRequestID:   pr.GetNumber(),
-						Title:           pr.GetTitle(),
-						Owner:           pr.Head.User.GetLogin(),
-						Branch:          pr.Head.GetRef(),
-						TargetBranch:    pr.Base.GetRef(),
-						HeadLabel:       pr.Head.GetLabel(),
-						BaseLabel:       pr.Base.GetLabel(),
-						SHA:             pr.Head.GetSHA(),
-						BaseSSHURL:      pr.Base.Repo.GetSSHURL(),
-						HeadSSHURL:      pr.Head.Repo.GetSSHURL(),
-						BuildInfo:       map[string]bool{},
-						NeedsMyApproval: user.GetLogin() != pr.Head.User.GetLogin(),
-						IgnoredBuilds:   repo.IgnoredBuilds,
-					}
-				}
-				wg.Done()
-			}(repo)
-		}
-
-		wg.Wait()
-		close(outputChannel)
-	}()
-	return outputChannel
-}
-
 func getAllRepos(client *github.Client, login string) []*github.Repository {
 	allRepos := make([]*github.Repository, 0, 30)
 	opt := &github.RepositoryListOptions{
@@ -277,4 +89,20 @@ func getAllRepos(client *github.Client, login string) []*github.Repository {
 
 		opt.ListOptions.Page = resp.NextPage
 	}
+}
+
+func getRepoPullRequestsAndReportErrors(client *github.Client, owner, name string, errWriter io.Writer) <-chan *github.PullRequest {
+	repoPrs, errors := getRepoPullRequests(client, owner, name)
+	go func() {
+		for {
+			err := <-errors
+			if err == nil {
+				return
+			}
+
+			fmt.Fprintln(errWriter, err)
+		}
+	}()
+
+	return repoPrs
 }

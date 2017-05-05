@@ -7,26 +7,26 @@ import (
 
 // PrpConfig defines the structure of the pull request parser config file
 type PrpConfig struct {
-	Profiles map[string]PrpConfigProfile `json:"profiles,omitempty"`
+	Profiles map[string]Profile `json:"profiles,omitempty"`
 }
 
-// PrpConfigProfile defines the structure of pull request parser profile
-type PrpConfigProfile struct {
-	TrackedRepos []PrpConfigRepo `json:"trackedRepos,omitempty"`
-	Token        string          `json:"token,omitempty"`
-	APIURL       string          `json:"apiUrl,omitempty"`
+// Profile defines the structure of pull request parser profile
+type Profile struct {
+	TrackedRepos []Repo `json:"trackedRepos,omitempty"`
+	Token        string `json:"token,omitempty"`
+	APIURL       string `json:"apiUrl,omitempty"`
 }
 
-// PrpConfigRepo defines the structure of pull request parser tracked repo entry
-type PrpConfigRepo struct {
+// Repo defines the structure of pull request parser tracked repo entry
+type Repo struct {
 	Owner         string   `json:"owner,omitempty"`
 	Name          string   `json:"name,omitempty"`
 	LocalPath     string   `json:"localPath,omitempty"`
 	IgnoredBuilds []string `json:"ignoredBuilds,omitempty"`
 }
 
-// LoadConfigFromFile loads a PrpConfig from a file
-func LoadConfigFromFile(fileName string) (*PrpConfig, error) {
+// LoadFromFile loads a PrpConfig from a file
+func LoadFromFile(fileName string) (*PrpConfig, error) {
 	configJSON, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return nil, err
@@ -38,35 +38,49 @@ func LoadConfigFromFile(fileName string) (*PrpConfig, error) {
 		return nil, err
 	}
 
-	Validate(configData)
+	configData.Validate()
 
 	return configData, nil
 }
 
 // Validate makes sure all of the config values are initialized
-func Validate(configData *PrpConfig) {
+func (configData *PrpConfig) Validate() {
 	if configData.Profiles == nil {
-		configData.Profiles = make(map[string]PrpConfigProfile)
+		configData.Profiles = make(map[string]Profile)
 	}
 
 	for profileName, profile := range configData.Profiles {
-		if profile.TrackedRepos == nil {
-			profile.TrackedRepos = make([]PrpConfigRepo, 0)
-		}
-
-		for repoName, repo := range profile.TrackedRepos {
-			if repo.IgnoredBuilds == nil {
-				repo.IgnoredBuilds = []string{}
-				profile.TrackedRepos[repoName] = repo
-			}
-		}
-
+		profile.validate()
 		configData.Profiles[profileName] = profile
 	}
 }
 
-// WriteConfig saves a PrpConfig to a file
-func WriteConfig(outputFile string, configData *PrpConfig) error {
+func (p *Profile) validate() {
+	if p.TrackedRepos == nil {
+		p.TrackedRepos = make([]Repo, 0)
+	}
+
+	for repoName, repo := range p.TrackedRepos {
+		if repo.IgnoredBuilds == nil {
+			repo.IgnoredBuilds = []string{}
+			p.TrackedRepos[repoName] = repo
+		}
+	}
+}
+
+// Update updates values in the profile
+func (p *Profile) Update(token, APIURL string) {
+	if token != "" {
+		p.Token = token
+	}
+
+	if APIURL != "" {
+		p.APIURL = APIURL
+	}
+}
+
+// Write saves a PrpConfig to a file
+func (configData PrpConfig) Write(outputFile string) error {
 	formattedConfig, _ := json.MarshalIndent(configData, "", "  ")
 	return ioutil.WriteFile(outputFile, formattedConfig, 0644)
 }

@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/github"
+	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/guywithnose/pull-request-parser/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
@@ -20,11 +21,11 @@ func TestCmdRepoAdd(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"foo", "bar"}))
-	assert.Nil(t, CmdRepoAdd(cli.NewContext(nil, set, nil)))
+	assert.Nil(t, command.CmdRepoAdd(cli.NewContext(nil, set, nil)))
 	assert.Nil(t, set.Parse([]string{"own", "rep"}))
-	assert.Nil(t, CmdRepoAdd(cli.NewContext(nil, set, nil)))
+	assert.Nil(t, command.CmdRepoAdd(cli.NewContext(nil, set, nil)))
 
-	modifiedConfigData, err := config.LoadConfigFromFile(configFileName)
+	modifiedConfigData, err := config.LoadFromFile(configFileName)
 	assert.Nil(t, err)
 
 	expectedConfigFile, configFileName := getConfigWithTwoRepos(t)
@@ -34,7 +35,7 @@ func TestCmdRepoAdd(t *testing.T) {
 
 func TestCmdRepoAddNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
-	err := CmdRepoAdd(cli.NewContext(nil, set, nil))
+	err := command.CmdRepoAdd(cli.NewContext(nil, set, nil))
 	assert.EqualError(t, err, "You must specify a config file")
 }
 
@@ -44,7 +45,7 @@ func TestCmdRepoAddUsage(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("config", configFileName, "doc")
 	set.String("profile", "foo", "doc")
-	err := CmdRepoAdd(cli.NewContext(nil, set, nil))
+	err := command.CmdRepoAdd(cli.NewContext(nil, set, nil))
 	assert.EqualError(t, err, "Usage: \"prp profile repo add {owner} {repoName}\"")
 }
 
@@ -53,7 +54,7 @@ func TestCmdRepoAddAlreadyTracked(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"own", "rep"}))
-	err := CmdRepoAdd(cli.NewContext(nil, set, nil))
+	err := command.CmdRepoAdd(cli.NewContext(nil, set, nil))
 	assert.EqualError(t, err, "own/rep is already tracked")
 }
 
@@ -65,7 +66,7 @@ func TestCompleteRepoAddOwner(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "bar\nown\nsource\n", writer.String())
 }
 
@@ -78,7 +79,7 @@ func TestCompleteRepoAddName(t *testing.T) {
 	assert.Nil(t, set.Parse([]string{"source"}))
 	os.Args = []string{"repo", "add", "source", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "rep\n", writer.String())
 }
 
@@ -91,7 +92,7 @@ func TestCompleteRepoAddNameOwnRepos(t *testing.T) {
 	assert.Nil(t, set.Parse([]string{"own"}))
 	os.Args = []string{"repo", "add", "own", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "foo\n", writer.String())
 }
 
@@ -104,7 +105,7 @@ func TestCompleteRepoAddNameAlreadyTracked(t *testing.T) {
 	assert.Nil(t, set.Parse([]string{"foo"}))
 	os.Args = []string{"repo", "add", "foo", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "\n", writer.String())
 }
 
@@ -117,7 +118,7 @@ func TestCompleteRepoAddDone(t *testing.T) {
 	assert.Nil(t, set.Parse([]string{"foo", "bar"}))
 	os.Args = []string{"repo", "add", "foo", "bar", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -128,7 +129,7 @@ func TestCompleteRepoAddNoConfig(t *testing.T) {
 	set.String("profile", "foo", "doc")
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -140,7 +141,7 @@ func TestCompleteRepoAddUserFailure(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -152,7 +153,7 @@ func TestCompleteRepoAddReposFailure(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "\n", writer.String())
 }
 
@@ -164,7 +165,7 @@ func TestCompleteRepoAddRepoFailure(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "bar\nown\n", writer.String())
 }
 
@@ -174,7 +175,7 @@ func TestCompleteRepoAddBadApiUrl(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	os.Args = []string{"repo", "add", "--completion"}
 	app, writer, _ := appWithTestWriters()
-	CompleteRepoAdd(cli.NewContext(app, set, nil))
+	command.CompleteRepoAdd(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -192,14 +193,15 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 			return
 		}
 
+		responses := make(map[string]string)
+		repos := []*github.Repository{
+			newRepository("own", "rep", true),
+			newRepository("own", "bar", true),
+			newRepository("own", "foo", false),
+			newRepository("bar", "goo", false),
+		}
+		bytes, _ := json.Marshal(repos)
 		if r.URL.String() == "/users/own/repos?per_page=100" {
-			repos := []*github.Repository{
-				newRepository("own", "rep", true),
-				newRepository("own", "bar", true),
-				newRepository("own", "foo", false),
-				newRepository("bar", "goo", false),
-			}
-			bytes, _ := json.Marshal(repos)
 			w.Header().Set(
 				"Link",
 				fmt.Sprintf(
@@ -209,27 +211,23 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 					server.URL,
 				),
 			)
-			fmt.Fprint(w, string(bytes))
-			return
 		}
+		responses["/users/own/repos?per_page=100"] = string(bytes)
 
-		if r.URL.String() == "/users/own/repos?page=2&per_page=100" {
-			bytes, _ := json.Marshal([]*github.Repository{})
-			fmt.Fprint(w, string(bytes))
-			return
-		}
+		bytes, _ = json.Marshal([]*github.Repository{})
+		responses["/users/own/repos?page=2&per_page=100"] = string(bytes)
 
-		if r.URL.String() == "/repos/own/bar" {
-			sourceRepo := newRepository("foo", "bar", false)
-			bytes, _ := json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
-			fmt.Fprint(w, string(bytes))
-			return
-		}
+		sourceRepo := newRepository("foo", "bar", false)
+		bytes, _ = json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
+		responses["/repos/own/bar"] = string(bytes)
 
-		if r.URL.String() == "/repos/own/rep" {
-			sourceRepo := newRepository("source", "rep", false)
-			bytes, _ := json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
-			fmt.Fprint(w, string(bytes))
+		sourceRepo = newRepository("source", "rep", false)
+		bytes, _ = json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
+		responses["/repos/own/rep"] = string(bytes)
+
+		resp, ok := responses[r.URL.String()]
+		if ok {
+			fmt.Fprint(w, resp)
 			return
 		}
 

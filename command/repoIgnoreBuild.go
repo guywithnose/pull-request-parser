@@ -29,17 +29,26 @@ func CmdRepoIgnoreBuild(c *cli.Context) error {
 		return err
 	}
 
-	for _, existingBuildName := range repo.IgnoredBuilds {
-		if existingBuildName == buildName {
-			return cli.NewExitError(fmt.Sprintf("%s is already being ignored by %s", buildName, repoName), 1)
-		}
+	err = checkExistingIgnoredBuilds(repo, buildName, repoName)
+	if err != nil {
+		return err
 	}
 
 	repo.IgnoredBuilds = append(repo.IgnoredBuilds, buildName)
 	profile.TrackedRepos[repoIndex] = *repo
 	configData.Profiles[*profileName] = profile
 
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return configData.Write(c.GlobalString("config"))
+}
+
+func checkExistingIgnoredBuilds(repo *config.Repo, buildName, repoName string) error {
+	for _, existingBuildName := range repo.IgnoredBuilds {
+		if existingBuildName == buildName {
+			return cli.NewExitError(fmt.Sprintf("%s is already being ignored by %s", buildName, repoName), 1)
+		}
+	}
+
+	return nil
 }
 
 // CompleteRepoIgnoreBuild handles bash autocompletion for the 'profile repo ignore-build' command
@@ -59,18 +68,23 @@ func CompleteRepoIgnoreBuild(c *cli.Context) {
 		fmt.Fprintln(c.App.Writer, strings.Join(sortRepoNames(&profile), "\n"))
 	} else {
 		repoName := c.Args().Get(0)
-		buildNames := []string{}
-		for _, profile := range configData.Profiles {
-			for _, repo := range profile.TrackedRepos {
-				if fmt.Sprintf("%s/%s", repo.Owner, repo.Name) == repoName {
-					continue
-				}
-
-				buildNames = append(buildNames, repo.IgnoredBuilds...)
-			}
-		}
-
-		sort.Strings(buildNames)
-		fmt.Fprintln(c.App.Writer, strings.Join(buildNames, "\n"))
+		ignoredBuilds := getExistingIgnoredBuilds(configData, repoName)
+		sort.Strings(ignoredBuilds)
+		fmt.Fprintln(c.App.Writer, strings.Join(ignoredBuilds, "\n"))
 	}
+}
+
+func getExistingIgnoredBuilds(configData *config.PrpConfig, repoName string) []string {
+	buildNames := []string{}
+	for _, profile := range configData.Profiles {
+		for _, repo := range profile.TrackedRepos {
+			if fmt.Sprintf("%s/%s", repo.Owner, repo.Name) == repoName {
+				continue
+			}
+
+			buildNames = append(buildNames, repo.IgnoredBuilds...)
+		}
+	}
+
+	return buildNames
 }

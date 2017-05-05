@@ -1,9 +1,6 @@
 package command
 
-import (
-	"github.com/guywithnose/pull-request-parser/config"
-	"github.com/urfave/cli"
-)
+import "github.com/urfave/cli"
 
 // CmdProfileUpdate parses the pull requests
 func CmdProfileUpdate(c *cli.Context) error {
@@ -25,15 +22,9 @@ func CmdProfileUpdate(c *cli.Context) error {
 		return cli.NewExitError("An update parameter is required", 1)
 	}
 
-	if token != "" {
-		profile.Token = token
-	}
-
-	if APIURL != "" {
-		profile.APIURL = APIURL
-	}
+	profile.Update(token, APIURL)
 
 	configData.Profiles[*profileName] = profile
 
-	return config.WriteConfig(c.GlobalString("config"), configData)
+	return configData.Write(c.GlobalString("config"))
 }

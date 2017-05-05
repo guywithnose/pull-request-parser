@@ -20,7 +20,7 @@ func CmdInitConfig(c *cli.Context) error {
 	}
 
 	configData := &config.PrpConfig{}
-	config.Validate(configData)
+	configData.Validate()
 
-	return config.WriteConfig(configFile, configData)
+	return configData.Write(configFile)
 }

@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"flag"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
 )
@@ -21,7 +22,7 @@ func TestCmdParse(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -46,7 +47,7 @@ func TestCmdParseVerbose(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	set.Bool("verbose", true, "doc")
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -71,7 +72,7 @@ func TestCmdParseNeedRebase(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	set.Bool("need-rebase", true, "doc")
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:3])
 	assert.Equal(
@@ -94,7 +95,7 @@ func TestCmdParseUserFilter(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	set.String("owner", "guy", "doc")
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:2])
 	assert.Equal(
@@ -117,7 +118,7 @@ func TestCmdParseRepoFilter(t *testing.T) {
 	repoFlag := cli.StringSlice{"foo/bar"}
 	set.Var(&repoFlag, "repo", "doc")
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:3])
 	assert.Equal(
@@ -141,7 +142,7 @@ func TestCmdParseRepoFilterMultiple(t *testing.T) {
 	repoFlag := cli.StringSlice{"foo/bar", "own/rep"}
 	set.Var(&repoFlag, "repo", "doc")
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -161,7 +162,7 @@ func TestCmdParseRepoFilterMultiple(t *testing.T) {
 func TestCmdParseNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	app := cli.NewApp()
-	err := CmdParse(cli.NewContext(app, set, nil))
+	err := command.CmdParse(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "You must specify a config file")
 }
 
@@ -172,7 +173,7 @@ func TestCmdParseNoProfile(t *testing.T) {
 	set.String("config", configFileName, "doc")
 	set.String("profile", "bar", "doc")
 	app := cli.NewApp()
-	err := CmdParse(cli.NewContext(app, set, nil))
+	err := command.CmdParse(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Invalid Profile: bar")
 }
 
@@ -182,7 +183,7 @@ func TestCmdParseUsage(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	assert.Nil(t, set.Parse([]string{"foo"}))
 	app := cli.NewApp()
-	err := CmdParse(cli.NewContext(app, set, nil))
+	err := command.CmdParse(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "Usage: \"prp parse\"")
 }
 
@@ -191,7 +192,7 @@ func TestCmdParseBadApiUrl(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app := cli.NewApp()
-	err := CmdParse(cli.NewContext(app, set, nil))
+	err := command.CmdParse(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, "parse %s/mockApi: invalid URL escape \"%s/\"")
 }
 
@@ -202,7 +203,7 @@ func TestCmdParseUserFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app := cli.NewApp()
-	err := CmdParse(cli.NewContext(app, set, nil))
+	err := command.CmdParse(cli.NewContext(app, set, nil))
 	assert.EqualError(t, err, fmt.Sprintf("GET %s/user: 500  []", ts.URL))
 }
 
@@ -213,7 +214,7 @@ func TestCmdParsePullRequestFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:3])
 	assert.Equal(
@@ -235,7 +236,7 @@ func TestCmdParseStatusFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -259,7 +260,7 @@ func TestCmdParseLabelFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -283,7 +284,7 @@ func TestCmdParseCommentFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -307,7 +308,7 @@ func TestCmdParseCommitCompareFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -331,7 +332,7 @@ func TestCmdParseReviewFailure(t *testing.T) {
 	defer removeFile(t, configFileName)
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
-	assert.Nil(t, CmdParse(cli.NewContext(app, set, nil)))
+	assert.Nil(t, command.CmdParse(cli.NewContext(app, set, nil)))
 	output := strings.Split(writer.String(), "\n")
 	sort.Strings(output[1:5])
 	assert.Equal(
@@ -365,7 +366,7 @@ func TestCompleteParseFlags(t *testing.T) {
 		},
 	}
 	os.Args = []string{"parse", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "--owner\n--repo\n--need-rebase\n--verbose\n", writer.String())
 }
 
@@ -377,7 +378,7 @@ func TestCompleteParseUser(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "fooGuy\nfooGuy2\nguy\nguy2\n", writer.String())
 }
 
@@ -389,7 +390,7 @@ func TestCompleteParseUserNoConfig(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -399,7 +400,7 @@ func TestCompleteParseUserBadApiUrl(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "", writer.String())
 }
 
@@ -411,7 +412,7 @@ func TestCompleteParseUserPullRequestFailure(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--user", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "fooGuy\nfooGuy2\n", writer.String())
 }
 
@@ -423,7 +424,7 @@ func TestCompleteParseRepo(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "foo/bar\nown/rep\n", writer.String())
 }
 
@@ -437,7 +438,7 @@ func TestCompleteParseRepoMulti(t *testing.T) {
 	set.Var(&repoFlag, "repo", "doc")
 	app, writer, _ := appWithTestWriters()
 	os.Args = []string{"parse", "--repo", "foo/bar", "--repo", "--completion"}
-	CompleteParse(cli.NewContext(app, set, nil))
+	command.CompleteParse(cli.NewContext(app, set, nil))
 	assert.Equal(t, "own/rep\n", writer.String())
 }
 
@@ -455,40 +456,21 @@ func getParseTestServer(failureURL string) *httptest.Server {
 			return
 		}
 
-		response = handlePullRequestRequests(r, w, server)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
+		handlers := []func(*http.Request, http.ResponseWriter, *httptest.Server) *string{
+			handlePullRequestRequests,
+			handleCommentRequests,
+			handleReviewRequests,
+			handleLabelRequests,
+			handleStatusRequests,
+			handleCommitsComparisonRequests,
 		}
 
-		response = handleCommentRequests(r, w, server)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
-		}
-
-		response = handleReviewRequests(r, w, server)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
-		}
-
-		response = handleLabelRequests(r)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
-		}
-
-		response = handleStatusRequests(r)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
-		}
-
-		response = handleCommitsComparisonRequests(r)
-		if response != nil {
-			fmt.Fprint(w, *response)
-			return
+		for _, handler := range handlers {
+			response = handler(r, w, server)
+			if response != nil {
+				fmt.Fprint(w, *response)
+				return
+			}
 		}
 
 		panic(r.URL.String())

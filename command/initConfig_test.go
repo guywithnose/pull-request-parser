@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"flag"
@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/guywithnose/pull-request-parser/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
 )
@@ -16,7 +17,7 @@ func TestCmdInitConfig(t *testing.T) {
 	removeFile(t, configFile.Name())
 	defer removeFile(t, configFile.Name())
 	set := getBaseFlagSet(configFile.Name())
-	assert.Nil(t, CmdInitConfig(cli.NewContext(nil, set, nil)))
+	assert.Nil(t, command.CmdInitConfig(cli.NewContext(nil, set, nil)))
 
 	configJSON, err := ioutil.ReadFile(configFile.Name())
 	assert.Nil(t, err)
@@ -28,7 +29,7 @@ func TestCmdInitConfig(t *testing.T) {
 }
 
 func TestCmdInitConfigNoConfigParameter(t *testing.T) {
-	err := CmdInitConfig(cli.NewContext(nil, flag.NewFlagSet("test", 0), nil))
+	err := command.CmdInitConfig(cli.NewContext(nil, flag.NewFlagSet("test", 0), nil))
 	assert.EqualError(t, err, "You must specify a config file")
 }
 
@@ -37,6 +38,6 @@ func TestCmdInitConfigFileExists(t *testing.T) {
 	assert.Nil(t, err)
 	defer removeFile(t, configFile.Name())
 	set := getBaseFlagSet(configFile.Name())
-	err = CmdInitConfig(cli.NewContext(nil, set, nil))
+	err = command.CmdInitConfig(cli.NewContext(nil, set, nil))
 	assert.EqualError(t, err, fmt.Sprintf("File already exists: %s", configFile.Name()))
 }

@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"io/ioutil"
@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/guywithnose/pull-request-parser/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestWriteConfig(t *testing.T) {
 
 	configData := getTestingConfig()
 
-	err = WriteConfig(configFile.Name(), configData)
+	err = configData.Write(configFile.Name())
 	assert.Nil(t, err)
 
 	configBytes, err := ioutil.ReadFile(configFile.Name())
@@ -30,7 +31,7 @@ func TestWriteConfig(t *testing.T) {
 
 func TestWriteConfigInvalidFile(t *testing.T) {
 	configData := getTestingConfig()
-	err := WriteConfig("/doesntexist", configData)
+	err := configData.Write("/doesntexist")
 	assert.EqualError(t, err, "open /doesntexist: permission denied")
 }
 
@@ -41,7 +42,7 @@ func TestLoadConfigFromFile(t *testing.T) {
 	err = ioutil.WriteFile(configFile.Name(), []byte(getTestingConfigJSONString()), 0644)
 	assert.Nil(t, err)
 
-	configData, err := LoadConfigFromFile(configFile.Name())
+	configData, err := config.LoadFromFile(configFile.Name())
 	assert.Nil(t, err)
 
 	expectedConfigData := getTestingConfig()
@@ -54,7 +55,7 @@ func TestLoadConfigFromFile(t *testing.T) {
 }
 
 func TestLoadConfigFromFileInvalidFile(t *testing.T) {
-	_, err := LoadConfigFromFile("/doesntexist")
+	_, err := config.LoadFromFile("/doesntexist")
 	assert.EqualError(t, err, "open /doesntexist: no such file or directory")
 }
 
@@ -65,7 +66,7 @@ func TestLoadConfigFromFileInvalidJSON(t *testing.T) {
 	err = ioutil.WriteFile(configFile.Name(), []byte("{"), 0644)
 	assert.Nil(t, err)
 
-	_, err = LoadConfigFromFile(configFile.Name())
+	_, err = config.LoadFromFile(configFile.Name())
 	assert.EqualError(t, err, "unexpected end of JSON input")
 	assert.Nil(t, os.Remove(configFile.Name()))
 }
@@ -77,7 +78,7 @@ func TestLoadEmptyProfile(t *testing.T) {
 	err = ioutil.WriteFile(configFile.Name(), []byte(`{"profiles":{"foo": {}}}`), 0644)
 	assert.Nil(t, err)
 
-	configData, err := LoadConfigFromFile(configFile.Name())
+	configData, err := config.LoadFromFile(configFile.Name())
 	assert.Nil(t, err)
 
 	if configData.Profiles["foo"].TrackedRepos == nil {
@@ -94,7 +95,7 @@ func TestLoadEmptyIgnoredBuilds(t *testing.T) {
 	err = ioutil.WriteFile(configFile.Name(), []byte(`{"profiles":{"foo": {"trackedRepos": [{}]}}}`), 0644)
 	assert.Nil(t, err)
 
-	configData, err := LoadConfigFromFile(configFile.Name())
+	configData, err := config.LoadFromFile(configFile.Name())
 	assert.Nil(t, err)
 
 	if configData.Profiles["foo"].TrackedRepos[0].IgnoredBuilds == nil {
@@ -111,10 +112,10 @@ func TestLoadEmptyHostConfigAndWrite(t *testing.T) {
 	err = ioutil.WriteFile(configFile.Name(), []byte(`{}`), 0644)
 	assert.Nil(t, err)
 
-	configData, err := LoadConfigFromFile(configFile.Name())
+	configData, err := config.LoadFromFile(configFile.Name())
 	assert.Nil(t, err)
 
-	err = WriteConfig(configFile.Name(), configData)
+	err = configData.Write(configFile.Name())
 	assert.Nil(t, err)
 
 	configBytes, err := ioutil.ReadFile(configFile.Name())
@@ -128,13 +129,24 @@ func TestLoadEmptyHostConfigAndWrite(t *testing.T) {
 	assert.Nil(t, os.Remove(configFile.Name()))
 }
 
-func getTestingConfig() *PrpConfig {
-	return &PrpConfig{
-		Profiles: map[string]PrpConfigProfile{
+func TestProfileUpdate(t *testing.T) {
+	profile := config.Profile{
+		Token:  "abc",
+		APIURL: "https://api.com",
+	}
+
+	profile.Update("foo", "bar")
+	assert.Equal(t, "foo", profile.Token)
+	assert.Equal(t, "bar", profile.APIURL)
+}
+
+func getTestingConfig() *config.PrpConfig {
+	return &config.PrpConfig{
+		Profiles: map[string]config.Profile{
 			"foo": {
 				Token:  "abc",
 				APIURL: "https://api.com",
-				TrackedRepos: []PrpConfigRepo{
+				TrackedRepos: []config.Repo{
 					{
 						Owner:         "own",
 						Name:          "rep",

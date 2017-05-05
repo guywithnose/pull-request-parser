@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"bytes"
@@ -23,24 +23,24 @@ func removeFile(t *testing.T, fileName string) {
 
 func getConfigWithFooProfile(t *testing.T) (config.PrpConfig, string) {
 	conf := config.PrpConfig{
-		Profiles: map[string]config.PrpConfigProfile{
+		Profiles: map[string]config.Profile{
 			"foo": {
-				TrackedRepos: []config.PrpConfigRepo{},
+				TrackedRepos: []config.Repo{},
 			},
 		},
 	}
 
 	configFile, err := ioutil.TempFile("/tmp", "config")
 	assert.Nil(t, err)
-	assert.Nil(t, config.WriteConfig(configFile.Name(), &conf))
+	assert.Nil(t, conf.Write(configFile.Name()))
 	return conf, configFile.Name()
 }
 
 func getConfigWithTwoRepos(t *testing.T) (config.PrpConfig, string) {
 	conf := config.PrpConfig{
-		Profiles: map[string]config.PrpConfigProfile{
+		Profiles: map[string]config.Profile{
 			"foo": {
-				TrackedRepos: []config.PrpConfigRepo{
+				TrackedRepos: []config.Repo{
 					{
 						Owner:         "foo",
 						Name:          "bar",
@@ -58,7 +58,7 @@ func getConfigWithTwoRepos(t *testing.T) (config.PrpConfig, string) {
 
 	configFile, err := ioutil.TempFile("/tmp", "config")
 	assert.Nil(t, err)
-	assert.Nil(t, config.WriteConfig(configFile.Name(), &conf))
+	assert.Nil(t, conf.Write(configFile.Name()))
 	return conf, configFile.Name()
 }
 
@@ -67,7 +67,7 @@ func getConfigWithIgnoredBuild(t *testing.T) (config.PrpConfig, string) {
 	profile := conf.Profiles["foo"]
 	profile.TrackedRepos[0].IgnoredBuilds = []string{"goo"}
 	conf.Profiles["foo"] = profile
-	assert.Nil(t, config.WriteConfig(configFileName, &conf))
+	assert.Nil(t, conf.Write(configFileName))
 	return conf, configFileName
 }
 
@@ -88,7 +88,7 @@ func getBaseFlagSet(configFileName string) *flag.FlagSet {
 }
 
 func assertConfigFile(t *testing.T, expectedConfigFile config.PrpConfig, configFileName string) {
-	modifiedConfigData, err := config.LoadConfigFromFile(configFileName)
+	modifiedConfigData, err := config.LoadFromFile(configFileName)
 	assert.Nil(t, err)
 	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
@@ -99,7 +99,7 @@ func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
 	profile.APIURL = url
 	profile.Token = "abc"
 	conf.Profiles["foo"] = profile
-	assert.Nil(t, config.WriteConfig(configFileName, &conf))
+	assert.Nil(t, conf.Write(configFileName))
 	return conf, configFileName
 }
 
@@ -108,7 +108,7 @@ func getConfigWithAPIURLAndPath(t *testing.T, url, path string) (config.PrpConfi
 	profile := conf.Profiles["foo"]
 	profile.TrackedRepos[1].LocalPath = path
 	conf.Profiles["foo"] = profile
-	assert.Nil(t, config.WriteConfig(configFileName, &conf))
+	assert.Nil(t, conf.Write(configFileName))
 	return conf, configFileName
 }
 
@@ -165,10 +165,11 @@ func handlePullRequestRequests(r *http.Request, w http.ResponseWriter, server *h
 }
 
 func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
+	responses := make(map[string]string)
+	bytes, _ := json.Marshal([]*github.IssueComment{
+		newComment("foo", "guy"),
+	})
 	if r.URL.String() == "/repos/own/rep/issues/1/comments?per_page=100" {
-		bytes, _ := json.Marshal([]*github.IssueComment{
-			newComment("foo", "guy"),
-		})
 		w.Header().Set(
 			"Link",
 			fmt.Sprintf(
@@ -178,42 +179,34 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 				server.URL,
 			),
 		)
-		response := string(bytes)
-		return &response
 	}
+	responses["/repos/own/rep/issues/1/comments?per_page=100"] = string(bytes)
 
-	if r.URL.String() == "/repos/own/rep/issues/1/comments?page=2&per_page=100" {
-		bytes, _ := json.Marshal([]*github.IssueComment{
-			newComment(":thumbsup:", "own"),
-		})
-		response := string(bytes)
-		return &response
-	}
+	bytes, _ = json.Marshal([]*github.IssueComment{
+		newComment(":thumbsup:", "own"),
+	})
+	responses["/repos/own/rep/issues/1/comments?page=2&per_page=100"] = string(bytes)
 
-	if r.URL.String() == "/repos/foo/bar/issues/1/comments?per_page=100" {
-		bytes, _ := json.Marshal([]*github.IssueComment{
-			newComment(":+1:", "guy"),
-			newComment(":thumbsup:", "guy2"),
-			newComment("LGTM", "guy"),
-		})
-		response := string(bytes)
-		return &response
-	}
+	bytes, _ = json.Marshal([]*github.IssueComment{
+		newComment(":+1:", "guy"),
+		newComment(":thumbsup:", "guy2"),
+		newComment("LGTM", "guy"),
+	})
+	responses["/repos/foo/bar/issues/1/comments?per_page=100"] = string(bytes)
 
-	if r.URL.String() == "/repos/own/rep/issues/2/comments?per_page=100" {
-		bytes, _ := json.Marshal([]*github.IssueComment{
-			newComment(":+1:", "guy"),
-			newComment("LGTM", "guy2"),
-		})
-		response := string(bytes)
-		return &response
-	}
+	bytes, _ = json.Marshal([]*github.IssueComment{
+		newComment(":+1:", "guy"),
+		newComment("LGTM", "guy2"),
+	})
+	responses["/repos/own/rep/issues/2/comments?per_page=100"] = string(bytes)
 
-	if r.URL.String() == "/repos/foo/bar/issues/2/comments?per_page=100" {
-		bytes, _ := json.Marshal([]*github.IssueComment{
-			newComment("foo", "guy"),
-		})
-		response := string(bytes)
+	bytes, _ = json.Marshal([]*github.IssueComment{
+		newComment("foo", "guy"),
+	})
+	responses["/repos/foo/bar/issues/2/comments?per_page=100"] = string(bytes)
+
+	response, ok := responses[r.URL.String()]
+	if ok {
 		return &response
 	}
 
@@ -268,7 +261,7 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 	return nil
 }
 
-func handleLabelRequests(r *http.Request) *string {
+func handleLabelRequests(r *http.Request, _ http.ResponseWriter, _ *httptest.Server) *string {
 	if r.URL.String() == "/repos/own/rep/issues/1/labels" {
 		bytes, _ := json.Marshal([]*github.Label{
 			newLabel("label1"),
@@ -305,7 +298,7 @@ func handleLabelRequests(r *http.Request) *string {
 	return nil
 }
 
-func handleStatusRequests(r *http.Request) *string {
+func handleStatusRequests(r *http.Request, _ http.ResponseWriter, _ *httptest.Server) *string {
 	if r.URL.String() == "/repos/own/rep/commits/sha1/statuses" {
 		bytes, _ := json.Marshal([]*github.RepoStatus{
 			newStatus("build1", "success"),
@@ -345,7 +338,7 @@ func handleStatusRequests(r *http.Request) *string {
 	return nil
 }
 
-func handleCommitsComparisonRequests(r *http.Request) *string {
+func handleCommitsComparisonRequests(r *http.Request, _ http.ResponseWriter, _ *httptest.Server) *string {
 	if r.URL.String() == "/repos/own/rep/compare/label...baseLabel1" {
 		bytes, _ := json.Marshal(newCommitsComparison(1))
 		response := string(bytes)
