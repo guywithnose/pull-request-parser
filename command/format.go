@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/guywithnose/pull-request-parser/config"
+	"github.com/reconquest/loreley"
 	"github.com/urfave/cli"
 )
 
@@ -48,42 +50,61 @@ func shortenLabel(label string) string {
 }
 
 func printResults(prs <-chan *pullRequest, verbose bool, w io.Writer) error {
-	tabW := tabwriter.NewWriter(w, 0, 0, 0, ' ', tabwriter.Debug)
+	buffer := &bytes.Buffer{}
+	tabW := tabwriter.NewWriter(buffer, 0, 0, 0, ' ', tabwriter.Debug|tabwriter.FilterHTML)
 	fmt.Fprintln(tabW, "Repo\tID\tTitle\tOwner\tBranch\tTarget\t+1\tUTD\tStatus\tReview\tLabels")
 	for pr := range prs {
-		title := pr.Title
-		if !verbose {
-			title = fmt.Sprintf("%.10s", title)
-		}
-
-		labels := strings.Join(pr.Labels, ",")
-		if !verbose {
-			shortLabels := []string{}
-			for _, label := range pr.Labels {
-				shortLabels = append(shortLabels, shortenLabel(label))
-			}
-
-			labels = strings.Join(shortLabels, ",")
-		}
-
-		fmt.Fprintf(
-			tabW,
-			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			pr.Repo.Name,
-			pr.PullRequestID,
-			title,
-			pr.Owner,
-			pr.Branch,
-			pr.TargetBranch,
-			strconv.Itoa(pr.Approvals),
-			boolToString(pr.Rebased),
-			buildStatus(pr.BuildInfo),
-			boolToString(pr.NeedsMyApproval),
-			labels,
-		)
+		printResult(pr, verbose, tabW)
 	}
 
-	return tabW.Flush()
+	tabW.Flush()
+
+	output := parseColors(buffer.String())
+
+	fmt.Fprint(w, output)
+
+	return nil
+}
+
+func printResult(pr *pullRequest, verbose bool, writer io.Writer) {
+	title := pr.Title
+	if !verbose {
+		title = fmt.Sprintf("%.10s", title)
+	}
+
+	labels := strings.Join(pr.Labels, ",")
+	if !verbose {
+		shortLabels := []string{}
+		for _, label := range pr.Labels {
+			shortLabels = append(shortLabels, shortenLabel(label))
+		}
+
+		labels = strings.Join(shortLabels, ",")
+	}
+
+	fmt.Fprintf(
+		writer,
+		"%s%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s<reset>\n",
+		pr.Color,
+		pr.Repo.Name,
+		pr.PullRequestID,
+		title,
+		pr.Owner,
+		pr.Branch,
+		pr.TargetBranch,
+		strconv.Itoa(pr.Approvals),
+		boolToString(pr.Rebased),
+		buildStatus(pr.BuildInfo),
+		boolToString(pr.NeedsMyApproval),
+		labels,
+	)
+}
+
+func parseColors(output string) string {
+	loreley.DelimLeft = "<"
+	loreley.DelimRight = ">"
+	result, _ := loreley.CompileAndExecuteToString(output, nil, nil)
+	return result
 }
 
 func buildStatus(contexts map[string]bool) string {

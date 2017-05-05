@@ -14,3 +14,7 @@ import:
   subpackages:
   - assert
 - package: github.com/guywithnose/runner
+- package: github.com/reconquest/loreley
+- package: golang.org/x/crypto
+  subpackages:
+  - ssh/terminal

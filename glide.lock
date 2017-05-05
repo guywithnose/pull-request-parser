@@ -1,5 +1,5 @@
-hash: 365672566c4ba98352bd55cef01980e6686059746f2a0d0ed82f402aa3092a80
-updated: 2017-05-01T16:20:55.710610547-04:00
+hash: b2b058849ae79baefa8fe8509351d4888f451cf7136b0773de24e537149bee83
+updated: 2017-05-05T13:26:11.147964723-04:00
 imports:
 - name: github.com/golang/protobuf
   version: 2bba0603135d7d7f5cb73b2125beeda19c09f4ef
@@ -23,12 +23,18 @@ imports:
   version: d2123843196b663e9bfab304fc51c8c3dc6b1e71
 - name: github.com/peterbourgon/diskv
   version: 937c5a91d7fb1477fa6d2bb71410b2ae7a0f2143
+- name: github.com/reconquest/loreley
+  version: 2ab6b7470a54bfa9b5b0289f9b4e8fc4839838f7
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
 - name: github.com/urfave/cli
   version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+- name: golang.org/x/crypto
+  version: 5a033cc77e57eca05bdb50522851d29e03569cbe
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
   version: d379faa25cbdc04d653984913a2ceb43b0bc46d7
   subpackages:
@@ -37,6 +43,10 @@ imports:
   version: 30fcca6531eb4bb278493c9fb299295b3b145934
   subpackages:
   - internal
+- name: golang.org/x/sys
+  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  subpackages:
+  - unix
 - name: google.golang.org/appengine
   version: 170382fa85b10b94728989dfcf6cc818b335c952
   subpackages:

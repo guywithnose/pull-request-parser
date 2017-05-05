@@ -29,6 +29,7 @@ type pullRequest struct {
 	BuildInfo       map[string]bool
 	Labels          []string
 	IgnoredBuilds   []string
+	Color           string
 }
 
 func (pr *pullRequest) getApprovals(user *github.User) {
@@ -208,6 +209,21 @@ func (pr pullRequest) checkLocalPath() error {
 	}
 
 	return checkPath(pr.Repo.LocalPath)
+}
+
+const (
+	red   = "<fg 1>"
+	green = "<fg 2>"
+)
+
+func (pr *pullRequest) setColor(user *github.User) {
+	if user.GetLogin() == pr.Owner {
+		if !pr.Rebased {
+			pr.Color = red
+		} else {
+			pr.Color = green
+		}
+	}
 }
 
 func (pr pullRequest) matchesRepoFilter(owner string, repos []string) bool {

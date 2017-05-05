@@ -82,6 +82,7 @@ func (parser prParser) getAdditionalData(prs <-chan *pullRequest) <-chan *pullRe
 			wg.Add(1)
 			go func(pr *pullRequest) {
 				pr.getAdditionalData(parser.user)
+				pr.setColor(parser.user)
 				results <- pr
 				wg.Done()
 			}(pr)
