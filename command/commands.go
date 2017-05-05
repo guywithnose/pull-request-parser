@@ -5,7 +5,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var profilCrudFlags = []cli.Flag{
+var profileCrudFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "token, t",
 		Usage: "The github access token for this profile",
@@ -64,7 +64,7 @@ var Commands = []cli.Command{
 				Usage:        "Add a profile",
 				Action:       CmdProfileAdd,
 				BashComplete: CompleteProfileAdd,
-				Flags:        profilCrudFlags,
+				Flags:        profileCrudFlags,
 			},
 			{
 				Name:         "update",
@@ -72,7 +72,7 @@ var Commands = []cli.Command{
 				Usage:        "Update a profile",
 				Action:       CmdProfileUpdate,
 				BashComplete: CompleteProfileAdd,
-				Flags:        profilCrudFlags,
+				Flags:        profileCrudFlags,
 			},
 		},
 	},

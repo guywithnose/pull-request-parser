@@ -3,12 +3,14 @@ package command
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/guywithnose/pull-request-parser/config"
+	"github.com/urfave/cli"
 )
 
 func sortRepoNames(profile *config.Profile) []string {
@@ -45,19 +47,19 @@ func shortenLabel(label string) string {
 	return strings.Join(initials, "")
 }
 
-func printResults(outputs <-chan *pullRequest, verbose bool, w io.Writer) error {
+func printResults(prs <-chan *pullRequest, verbose bool, w io.Writer) error {
 	tabW := tabwriter.NewWriter(w, 0, 0, 0, ' ', tabwriter.Debug)
 	fmt.Fprintln(tabW, "Repo\tID\tTitle\tOwner\tBranch\tTarget\t+1\tUTD\tStatus\tReview\tLabels")
-	for po := range outputs {
-		title := po.Title
+	for pr := range prs {
+		title := pr.Title
 		if !verbose {
 			title = fmt.Sprintf("%.10s", title)
 		}
 
-		labels := strings.Join(po.Labels, ",")
+		labels := strings.Join(pr.Labels, ",")
 		if !verbose {
 			shortLabels := []string{}
-			for _, label := range po.Labels {
+			for _, label := range pr.Labels {
 				shortLabels = append(shortLabels, shortenLabel(label))
 			}
 
@@ -67,16 +69,16 @@ func printResults(outputs <-chan *pullRequest, verbose bool, w io.Writer) error 
 		fmt.Fprintf(
 			tabW,
 			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			po.Repo.Name,
-			po.PullRequestID,
+			pr.Repo.Name,
+			pr.PullRequestID,
 			title,
-			po.Owner,
-			po.Branch,
-			po.TargetBranch,
-			strconv.Itoa(po.Approvals),
-			boolToString(po.Rebased),
-			buildStatus(po.BuildInfo),
-			boolToString(po.NeedsMyApproval),
+			pr.Owner,
+			pr.Branch,
+			pr.TargetBranch,
+			strconv.Itoa(pr.Approvals),
+			boolToString(pr.Rebased),
+			buildStatus(pr.BuildInfo),
+			boolToString(pr.NeedsMyApproval),
 			labels,
 		)
 	}
@@ -134,4 +136,16 @@ func stringSliceContains(needle string, haystack []string) bool {
 	}
 
 	return false
+}
+
+func checkPath(localPath string) error {
+	if _, err := os.Stat(localPath); os.IsNotExist(err) {
+		return cli.NewExitError(fmt.Sprintf("Path does not exist: %s", localPath), 1)
+	}
+
+	if _, err := os.Stat(fmt.Sprintf("%s/.git", localPath)); os.IsNotExist(err) {
+		return cli.NewExitError(fmt.Sprintf("Path is not a git repo: %s", localPath), 1)
+	}
+
+	return nil
 }

@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 
@@ -32,7 +31,7 @@ type pullRequest struct {
 	IgnoredBuilds   []string
 }
 
-func (pr *pullRequest) handleApprovals(user *github.User) {
+func (pr *pullRequest) getApprovals(user *github.User) {
 	approvingUsers := mergeUsers(pr.getApprovingUsersFromComments(), pr.getApprovingUsersFromReviews())
 	for approvingUser := range approvingUsers {
 		if approvingUser == user.GetLogin() {
@@ -44,7 +43,7 @@ func (pr *pullRequest) handleApprovals(user *github.User) {
 }
 
 func (pr pullRequest) getApprovingUsersFromComments() map[string]bool {
-	allComments := pr.handleComments()
+	allComments := pr.getComments()
 	approvingUsers := make(map[string]bool)
 	for comment := range allComments {
 		if strings.Contains(comment.GetBody(), ":+1:") || strings.Contains(comment.GetBody(), ":thumbsup:") || strings.Contains(comment.GetBody(), "LGTM") {
@@ -56,7 +55,7 @@ func (pr pullRequest) getApprovingUsersFromComments() map[string]bool {
 }
 
 func (pr pullRequest) getApprovingUsersFromReviews() map[string]bool {
-	allReviews := pr.handleReviews()
+	allReviews := pr.getReviews()
 	approvingUsers := make(map[string]bool)
 	for review := range allReviews {
 		if review.GetState() == "APPROVED" {
@@ -75,7 +74,7 @@ func mergeUsers(users1, users2 map[string]bool) map[string]bool {
 	return users1
 }
 
-func (pr pullRequest) handleComments() <-chan *github.IssueComment {
+func (pr pullRequest) getComments() <-chan *github.IssueComment {
 	opt := &github.IssueListCommentsOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
@@ -103,7 +102,7 @@ func (pr pullRequest) handleComments() <-chan *github.IssueComment {
 	return allComments
 }
 
-func (pr pullRequest) handleReviews() <-chan *github.PullRequestReview {
+func (pr pullRequest) getReviews() <-chan *github.PullRequestReview {
 	allReviews := make(chan *github.PullRequestReview)
 	go func() {
 		defer close(allReviews)
@@ -119,7 +118,7 @@ func (pr pullRequest) handleReviews() <-chan *github.PullRequestReview {
 	return allReviews
 }
 
-func (pr *pullRequest) handleLabels() {
+func (pr *pullRequest) getLabels() {
 	labels, _, err := pr.client.Issues.ListLabelsByIssue(context.Background(), pr.Repo.Owner, pr.Repo.Name, pr.PullRequestID, nil)
 	if err != nil {
 		return
@@ -130,7 +129,7 @@ func (pr *pullRequest) handleLabels() {
 	}
 }
 
-func (pr *pullRequest) handleStatuses() {
+func (pr *pullRequest) getStatuses() {
 	statuses, _, err := pr.client.Repositories.ListStatuses(context.Background(), pr.Repo.Owner, pr.Repo.Name, pr.SHA, nil)
 	if err != nil {
 		return
@@ -165,7 +164,7 @@ func (pr pullRequest) buildIsIgnored(status *github.RepoStatus) bool {
 	return false
 }
 
-func (pr *pullRequest) handleCommitComparision() {
+func (pr *pullRequest) getCommitComparison() {
 	commitComparison, _, err := pr.client.Repositories.CompareCommits(context.Background(), pr.Repo.Owner, pr.Repo.Name, pr.HeadLabel, pr.BaseLabel)
 	if err != nil {
 		return
@@ -174,29 +173,29 @@ func (pr *pullRequest) handleCommitComparision() {
 	pr.Rebased = commitComparison.GetAheadBy() == 0
 }
 
-func (pr *pullRequest) getExtraData(user *github.User) {
+func (pr *pullRequest) getAdditionalData(user *github.User) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		pr.handleCommitComparision()
+		pr.getCommitComparison()
 		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		pr.handleApprovals(user)
+		pr.getApprovals(user)
 		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		pr.handleLabels()
+		pr.getLabels()
 		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		pr.handleStatuses()
+		pr.getStatuses()
 		wg.Done()
 	}()
 
@@ -208,15 +207,7 @@ func (pr pullRequest) checkLocalPath() error {
 		return fmt.Errorf("Path was not set for repo: %s/%s", pr.Repo.Owner, pr.Repo.Name)
 	}
 
-	if _, err := os.Stat(pr.Repo.LocalPath); os.IsNotExist(err) {
-		return fmt.Errorf("Path does not exist: %s", pr.Repo.LocalPath)
-	}
-
-	if _, err := os.Stat(fmt.Sprintf("%s/.git", pr.Repo.LocalPath)); os.IsNotExist(err) {
-		return fmt.Errorf("Path is not a git repo: %s", pr.Repo.LocalPath)
-	}
-
-	return nil
+	return checkPath(pr.Repo.LocalPath)
 }
 
 func (pr pullRequest) matchesRepoFilter(owner string, repos []string) bool {

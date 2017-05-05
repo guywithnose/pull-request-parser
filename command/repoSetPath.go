@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/urfave/cli"
@@ -38,18 +37,6 @@ func CmdRepoSetPath(c *cli.Context) error {
 	configData.Profiles[*profileName] = profile
 
 	return configData.Write(c.GlobalString("config"))
-}
-
-func checkPath(localPath string) error {
-	if _, err := os.Stat(localPath); os.IsNotExist(err) {
-		return cli.NewExitError(fmt.Sprintf("Path does not exist: %s", localPath), 1)
-	}
-
-	if _, err := os.Stat(fmt.Sprintf("%s/.git", localPath)); os.IsNotExist(err) {
-		return cli.NewExitError(fmt.Sprintf("Path is not a git repo: %s", localPath), 1)
-	}
-
-	return nil
 }
 
 // CompleteRepoSetPath handles bash autocompletion for the 'profile repo set-path' command

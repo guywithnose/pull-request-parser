@@ -22,7 +22,7 @@ func newParser(client *github.Client, user *github.User, profile *config.Profile
 	}
 }
 
-func (parser prParser) getBasePrData(errorWriter io.Writer) <-chan *pullRequest {
+func (parser prParser) getBasePullRequestData(errorWriter io.Writer) <-chan *pullRequest {
 	prs := make(chan *pullRequest, 10)
 	go func() {
 		wg := sync.WaitGroup{}
@@ -64,7 +64,7 @@ func (parser prParser) getRepositoryPullRequests(repo config.Repo, prs chan<- *p
 	}
 }
 
-func (parser prParser) parseResults(prs <-chan *pullRequest, owner string, repos []string, needsRebase bool) <-chan *pullRequest {
+func (parser prParser) parsePullRequests(prs <-chan *pullRequest, owner string, repos []string, needsRebase bool) <-chan *pullRequest {
 	prs = filterPullRequestsByRepo(prs, owner, repos)
 	prs = parser.getAdditionalData(prs)
 	if needsRebase {
@@ -81,7 +81,7 @@ func (parser prParser) getAdditionalData(prs <-chan *pullRequest) <-chan *pullRe
 		for pr := range prs {
 			wg.Add(1)
 			go func(pr *pullRequest) {
-				pr.getExtraData(parser.user)
+				pr.getAdditionalData(parser.user)
 				results <- pr
 				wg.Done()
 			}(pr)

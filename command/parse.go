@@ -37,9 +37,9 @@ func CmdParse(c *cli.Context) error {
 	}
 
 	parser := newParser(client, user, &profile)
-	prs := parser.getBasePrData(c.App.ErrWriter)
+	prs := parser.getBasePullRequestData(c.App.ErrWriter)
 
-	results := parser.parseResults(prs, c.String("owner"), c.StringSlice("repo"), c.Bool("need-rebase"))
+	results := parser.parsePullRequests(prs, c.String("owner"), c.StringSlice("repo"), c.Bool("need-rebase"))
 
 	return printResults(results, c.Bool("verbose"), c.App.Writer)
 }

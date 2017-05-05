@@ -66,10 +66,10 @@ func (r rebaser) rebasePullRequest(pr *pullRequest) error {
 
 	defer r.cleanUp(currentBranchName, tempBranch, path)
 
-	return r.handleRebase(path, ownedRemote, upstreamRemote, tempBranch, pr)
+	return r.doRebase(path, ownedRemote, upstreamRemote, tempBranch, pr)
 }
 
-func (r rebaser) handleRebase(path, ownedRemote, upstreamRemote, tempBranch string, pr *pullRequest) error {
+func (r rebaser) doRebase(path, ownedRemote, upstreamRemote, tempBranch string, pr *pullRequest) error {
 	myRemoteBranch := fmt.Sprintf("%s/%s", ownedRemote, pr.Branch)
 	fmt.Fprintf(r.verboseWriter, "Resetting code to %s\n", myRemoteBranch)
 	err := r.runCommand(path, "git", "reset", "--hard", myRemoteBranch)
