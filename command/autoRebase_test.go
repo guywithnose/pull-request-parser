@@ -268,7 +268,8 @@ func TestCmdAutoRebaseResetFailure(t *testing.T) {
 func TestCmdAutoRebaseRebaseFailure(t *testing.T) {
 	repoDir := fmt.Sprintf("%s/repo", os.TempDir())
 	defer removeFile(t, repoDir)
-	cb := getFailureCommands(repoDir, "git rebase upstream/baseRef1", "rebase failure", 8, 10, 1)
+	cb := getFailureCommands(repoDir, "git rebase upstream/baseRef1", "rebase failure", 8, 9, 1)
+	cb.ExpectedCommands[9] = runner.NewExpectedCommand(repoDir, "git rebase --abort", "", 0)
 	ts, writer := runBaseCommand(t, "", repoDir, cb, true, true)
 	defer ts.Close()
 	assert.Equal(
