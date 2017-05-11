@@ -142,7 +142,7 @@ func (pr *pullRequest) getStatuses() {
 func (pr *pullRequest) parseStatuses(statuses []*github.RepoStatus) {
 	for _, status := range statuses {
 		if pr.buildIsIgnored(status) {
-			return
+			continue
 		}
 
 		if _, ok := pr.BuildInfo[status.GetContext()]; !ok {
