@@ -88,7 +88,7 @@ func printResult(pr *pullRequest, verbose bool, writer io.Writer) {
 		pr.Color,
 		pr.Repo.Name,
 		pr.PullRequestID,
-		title,
+		strings.Replace(title, "&", "and", -1),
 		pr.Owner,
 		pr.Branch,
 		pr.TargetBranch,
