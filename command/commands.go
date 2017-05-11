@@ -5,6 +5,20 @@ import (
 	"github.com/urfave/cli"
 )
 
+// GlobalFlags are the flags that apply to all commands
+var GlobalFlags = []cli.Flag{
+	cli.StringFlag{
+		Name:   "config, c",
+		Usage:  "The config file",
+		EnvVar: "PRP_CONFIG_FILE",
+	},
+	cli.StringFlag{
+		Name:  "profile, p",
+		Usage: "The current profile",
+		Value: "default",
+	},
+}
+
 var profileCrudFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "token, t",

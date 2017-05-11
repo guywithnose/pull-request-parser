@@ -9,20 +9,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// GlobalFlags are the flags that apply to all commands
-var GlobalFlags = []cli.Flag{
-	cli.StringFlag{
-		Name:   "config, c",
-		Usage:  "The config file",
-		EnvVar: "PRP_CONFIG_FILE",
-	},
-	cli.StringFlag{
-		Name:  "profile, p",
-		Usage: "The current profile",
-		Value: "default",
-	},
-}
-
 // RootCompletion prints the list of root commands as the root completion method
 // This is similar to the default method, but it excludes aliases
 func RootCompletion(c *cli.Context) {
