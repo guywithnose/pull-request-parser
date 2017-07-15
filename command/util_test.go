@@ -18,10 +18,12 @@ import (
 )
 
 func removeFile(t *testing.T, fileName string) {
+	t.Helper()
 	assert.Nil(t, os.RemoveAll(fileName))
 }
 
 func getConfigWithFooProfile(t *testing.T) (config.PrpConfig, string) {
+	t.Helper()
 	conf := config.PrpConfig{
 		Profiles: map[string]config.Profile{
 			"foo": {
@@ -37,6 +39,7 @@ func getConfigWithFooProfile(t *testing.T) (config.PrpConfig, string) {
 }
 
 func getConfigWithTwoRepos(t *testing.T) (config.PrpConfig, string) {
+	t.Helper()
 	conf := config.PrpConfig{
 		Profiles: map[string]config.Profile{
 			"foo": {
@@ -63,6 +66,7 @@ func getConfigWithTwoRepos(t *testing.T) (config.PrpConfig, string) {
 }
 
 func getConfigWithIgnoredBuild(t *testing.T) (config.PrpConfig, string) {
+	t.Helper()
 	conf, configFileName := getConfigWithTwoRepos(t)
 	profile := conf.Profiles["foo"]
 	profile.TrackedRepos[0].IgnoredBuilds = []string{"goo"}
@@ -88,12 +92,14 @@ func getBaseFlagSet(configFileName string) *flag.FlagSet {
 }
 
 func assertConfigFile(t *testing.T, expectedConfigFile config.PrpConfig, configFileName string) {
+	t.Helper()
 	modifiedConfigData, err := config.LoadFromFile(configFileName)
 	assert.Nil(t, err)
 	assert.Equal(t, *modifiedConfigData, expectedConfigFile)
 }
 
 func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
+	t.Helper()
 	conf, configFileName := getConfigWithIgnoredBuild(t)
 	profile := conf.Profiles["foo"]
 	profile.APIURL = url
@@ -104,6 +110,7 @@ func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
 }
 
 func getConfigWithAPIURLAndPath(t *testing.T, url, path string) (config.PrpConfig, string) {
+	t.Helper()
 	conf, configFileName := getConfigWithAPIURL(t, url)
 	profile := conf.Profiles["foo"]
 	profile.TrackedRepos[1].LocalPath = path
@@ -188,7 +195,7 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 	responses["/repos/own/rep/issues/1/comments?page=2&per_page=100"] = string(bytes)
 
 	bytes, _ = json.Marshal([]*github.IssueComment{
-		newComment(":+1:", "guy"),
+		newComment(":+1:", "fooGuy"),
 		newComment(":thumbsup:", "guy2"),
 		newComment("LGTM", "guy"),
 	})
@@ -216,7 +223,7 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
 	if r.URL.String() == "/repos/own/rep/pulls/1/reviews" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
-			newReview("guy", "APPROVED"),
+			newReview("fooGuy"),
 		})
 		w.Header().Set(
 			"Link",
@@ -233,10 +240,10 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 
 	if r.URL.String() == "/repos/foo/bar/pulls/1/reviews" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
-			newReview("guy", "APPROVED"),
-			newReview("own", "APPROVED"),
-			newReview("guy2", "APPROVED"),
-			newReview("guy3", "APPROVED"),
+			newReview("guy"),
+			newReview("own"),
+			newReview("guy2"),
+			newReview("guy3"),
 		})
 		response := string(bytes)
 		return &response
@@ -244,7 +251,7 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 
 	if r.URL.String() == "/repos/own/rep/pulls/2/reviews" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
-			newReview("guy", "APPROVED"),
+			newReview("guy"),
 		})
 		response := string(bytes)
 		return &response
@@ -252,7 +259,7 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 
 	if r.URL.String() == "/repos/foo/bar/pulls/2/reviews" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
-			newReview("guy2", "APPROVED"),
+			newReview("guy2"),
 		})
 		response := string(bytes)
 		return &response
@@ -400,7 +407,8 @@ func newComment(body, user string) *github.IssueComment {
 	}
 }
 
-func newReview(user, state string) *github.PullRequestReview {
+func newReview(user string) *github.PullRequestReview {
+	state := "APPROVED"
 	return &github.PullRequestReview{
 		User:  newUser(user),
 		State: &state,

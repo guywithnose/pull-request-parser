@@ -5,22 +5,20 @@ gometalinter --vendored-linters \
     --disable-all \
     --enable aligncheck \
     --enable deadcode \
-    --enable dupl --dupl-threshold=100 \
+    --enable dupl --dupl-threshold=150 \
     --enable errcheck \
     --enable goconst \
     --enable gocyclo \
     --enable gofmt \
     --enable golint \
-    --enable gosimple \
     --enable ineffassign \
     --enable interfacer \
     --enable lll --line-length=160 \
     --enable misspell \
-    --enable staticcheck \
+    --enable megacheck \
     --enable structcheck \
     --enable unconvert \
     --enable unparam \
-    --enable unused \
     --enable varcheck \
     --enable vet \
     --enable vetshadow \

@@ -57,7 +57,7 @@ func printResults(prs <-chan *pullRequest, verbose bool, w io.Writer) error {
 		printResult(pr, verbose, tabW)
 	}
 
-	tabW.Flush()
+	_ = tabW.Flush()
 
 	output := parseColors(buffer.String())
 

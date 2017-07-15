@@ -218,11 +218,11 @@ func getRepoAddTestServer(failureURL string) *httptest.Server {
 		responses["/users/own/repos?page=2&per_page=100"] = string(bytes)
 
 		sourceRepo := newRepository("foo", "bar", false)
-		bytes, _ = json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
+		bytes, _ = json.Marshal(newRepositoryWithSource(sourceRepo))
 		responses["/repos/own/bar"] = string(bytes)
 
 		sourceRepo = newRepository("source", "rep", false)
-		bytes, _ = json.Marshal(newRepositoryWithSource("own", "rep", true, sourceRepo))
+		bytes, _ = json.Marshal(newRepositoryWithSource(sourceRepo))
 		responses["/repos/own/rep"] = string(bytes)
 
 		resp, ok := responses[r.URL.String()]
@@ -245,7 +245,10 @@ func newRepository(owner, name string, fork bool) *github.Repository {
 	}
 }
 
-func newRepositoryWithSource(owner, name string, fork bool, source *github.Repository) *github.Repository {
+func newRepositoryWithSource(source *github.Repository) *github.Repository {
+	owner := "own"
+	name := "rep"
+	fork := true
 	return &github.Repository{
 		Source: source,
 		Owner:  &github.User{Login: &owner},

@@ -81,7 +81,11 @@ func (r rebaser) doRebase(path, ownedRemote, upstreamRemote, tempBranch string, 
 	fmt.Fprintf(r.verboseWriter, "Rebasing against %s\n", upstreamBranch)
 	err = r.runCommand(path, "git", "rebase", upstreamBranch)
 	if err != nil {
-		r.runCommand(path, "git", "rebase", "--abort")
+		abortErr := r.runCommand(path, "git", "rebase", "--abort")
+		if abortErr != nil {
+			fmt.Fprintf(r.errorWriter, "Could not abort rebase PR #%d in %s/%s because: %v\n", pr.PullRequestID, pr.Repo.Owner, pr.Repo.Name, abortErr)
+		}
+
 		return wrapExitError(err, fmt.Sprintf("Unable to rebase against %s, there may be a conflict", upstreamBranch))
 	}
 
