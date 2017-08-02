@@ -207,7 +207,13 @@ func (r rebaser) getCurrentBranch(path string) (string, error) {
 	if err != nil {
 		code := getErrorCode(err)
 		if code == 128 {
-			return "", fmt.Errorf("No branch checked out in %s\n%s", path, string(currentBranchOutput))
+			getCurrentBranch = r.cmdWrapper.New(path, "git", "rev-parse", "HEAD")
+			currentBranchOutput, err = getCurrentBranch.CombinedOutput()
+			if err != nil {
+				return "", fmt.Errorf("No branch checked out in %s\n%s", path, string(currentBranchOutput))
+			}
+
+			return strings.Replace(strings.Replace(string(currentBranchOutput), "refs/heads/", "", -1), "\n", "", -1), nil
 		}
 
 		return "", fmt.Errorf("%s\n%s", err, string(currentBranchOutput))

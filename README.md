@@ -2,7 +2,7 @@ pull-request-parser uses the Github API to parse open pull requests and aggregat
 
 ### Setup
 ```sh
-go get github.com/guywithnose/pull-request-parser/prp
+go get github.com/guywithnose/pull-request-parser/cmd/prp
 prp --config ~/prpConfig.json init-config
 prp --config ~/prpConfig.json profile add default --token {YOUR_GITHUB_TOKEN}
 prp --config ~/prpConfig.json repo add {USER} {REPO_NAME}
