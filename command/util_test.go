@@ -102,7 +102,7 @@ func getConfigWithAPIURL(t *testing.T, url string) (config.PrpConfig, string) {
 	t.Helper()
 	conf, configFileName := getConfigWithIgnoredBuild(t)
 	profile := conf.Profiles["foo"]
-	profile.APIURL = url
+	profile.APIURL = fmt.Sprintf("%s/", url)
 	profile.Token = "abc"
 	conf.Profiles["foo"] = profile
 	assert.Nil(t, conf.Write(configFileName))
@@ -221,15 +221,15 @@ func handleCommentRequests(r *http.Request, w http.ResponseWriter, server *httpt
 }
 
 func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httptest.Server) *string {
-	if r.URL.String() == "/repos/own/rep/pulls/1/reviews" {
+	if r.URL.String() == "/repos/own/rep/pulls/1/reviews?per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
 			newReview("fooGuy"),
 		})
 		w.Header().Set(
 			"Link",
 			fmt.Sprintf(
-				`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="next", `+
-					`<%s/mockApi/repos/own/rep/issues/1/comments?per_page=100&page=2>; rel="last"`,
+				`<%s/mockApi/repos/own/rep/pulls/1/reviews?per_page=100&page=2>; rel="next", `+
+					`<%s/mockApi/repos/own/rep/pulls/1/reviews?per_page=100&page=2>; rel="last"`,
 				server.URL,
 				server.URL,
 			),
@@ -238,7 +238,16 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 		return &response
 	}
 
-	if r.URL.String() == "/repos/foo/bar/pulls/1/reviews" {
+	if r.URL.String() == "/repos/own/rep/pulls/1/reviews?page=2&per_page=100" {
+
+		bytes, _ := json.Marshal([]*github.PullRequestReview{
+			newReview("fooGuy"),
+		})
+		response := string(bytes)
+		return &response
+	}
+
+	if r.URL.String() == "/repos/foo/bar/pulls/1/reviews?per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
 			newReview("guy"),
 			newReview("own"),
@@ -249,7 +258,7 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 		return &response
 	}
 
-	if r.URL.String() == "/repos/own/rep/pulls/2/reviews" {
+	if r.URL.String() == "/repos/own/rep/pulls/2/reviews?per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
 			newReview("guy"),
 		})
@@ -257,7 +266,7 @@ func handleReviewRequests(r *http.Request, w http.ResponseWriter, server *httpte
 		return &response
 	}
 
-	if r.URL.String() == "/repos/foo/bar/pulls/2/reviews" {
+	if r.URL.String() == "/repos/foo/bar/pulls/2/reviews?per_page=100" {
 		bytes, _ := json.Marshal([]*github.PullRequestReview{
 			newReview("guy2"),
 		})

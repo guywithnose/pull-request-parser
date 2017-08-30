@@ -104,16 +104,25 @@ func (pr pullRequest) getComments() <-chan *github.IssueComment {
 }
 
 func (pr pullRequest) getReviews() <-chan *github.PullRequestReview {
+	opt := &github.ListOptions{PerPage: 100}
 	allReviews := make(chan *github.PullRequestReview)
 	go func() {
 		defer close(allReviews)
-		reviews, _, err := pr.client.PullRequests.ListReviews(context.Background(), pr.Repo.Owner, pr.Repo.Name, pr.PullRequestID)
-		if err != nil {
-			return
-		}
+		for {
+			reviews, resp, err := pr.client.PullRequests.ListReviews(context.Background(), pr.Repo.Owner, pr.Repo.Name, pr.PullRequestID, opt)
+			if err != nil {
+				return
+			}
 
-		for _, review := range reviews {
-			allReviews <- review
+			for _, review := range reviews {
+				allReviews <- review
+			}
+
+			if resp.NextPage == 0 {
+				return
+			}
+
+			opt.Page = resp.NextPage
 		}
 	}()
 	return allReviews

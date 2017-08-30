@@ -193,7 +193,7 @@ func TestCmdParseBadApiUrl(t *testing.T) {
 	set := getBaseFlagSet(configFileName)
 	app := cli.NewApp()
 	err := command.CmdParse(cli.NewContext(app, set, nil))
-	assert.EqualError(t, err, "parse %s/mockApi: invalid URL escape \"%s/\"")
+	assert.EqualError(t, err, "parse %s/mockApi/: invalid URL escape \"%s/\"")
 }
 
 func TestCmdParseUserFailure(t *testing.T) {
@@ -326,7 +326,7 @@ func TestCmdParseCommitCompareFailure(t *testing.T) {
 }
 
 func TestCmdParseReviewFailure(t *testing.T) {
-	ts := getParseTestServer("/repos/foo/bar/pulls/1/reviews")
+	ts := getParseTestServer("/repos/foo/bar/pulls/1/reviews?per_page=100")
 	defer ts.Close()
 	_, configFileName := getConfigWithAPIURL(t, ts.URL)
 	defer removeFile(t, configFileName)

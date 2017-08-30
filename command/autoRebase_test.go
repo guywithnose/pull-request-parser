@@ -706,7 +706,7 @@ func TestCmdAutoRebaseBadAPIURL(t *testing.T) {
 	app := cli.NewApp()
 	cb := &runner.Test{}
 	err := command.CmdAutoRebase(cb)(cli.NewContext(app, set, nil))
-	assert.EqualError(t, err, "parse %s/mockApi: invalid URL escape \"%s/\"")
+	assert.EqualError(t, err, "parse %s/mockApi/: invalid URL escape \"%s/\"")
 }
 
 func TestCmdAutoRebaseUserFailure(t *testing.T) {

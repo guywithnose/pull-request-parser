@@ -117,6 +117,14 @@ func TestParseWebHook(t *testing.T) {
 			messageType: "gollum",
 		},
 		{
+			payload:     &InstallationEvent{},
+			messageType: "installation",
+		},
+		{
+			payload:     &InstallationRepositoriesEvent{},
+			messageType: "installation_repositories",
+		},
+		{
 			payload:     &IssueCommentEvent{},
 			messageType: "issue_comment",
 		},
@@ -143,6 +151,10 @@ func TestParseWebHook(t *testing.T) {
 		{
 			payload:     &OrganizationEvent{},
 			messageType: "organization",
+		},
+		{
+			payload:     &OrgBlockEvent{},
+			messageType: "org_block",
 		},
 		{
 			payload:     &PageBuildEvent{},
@@ -197,6 +209,10 @@ func TestParseWebHook(t *testing.T) {
 			messageType: "status",
 		},
 		{
+			payload:     &TeamEvent{},
+			messageType: "team",
+		},
+		{
 			payload:     &TeamAddEvent{},
 			messageType: "team_add",
 		},
@@ -218,5 +234,19 @@ func TestParseWebHook(t *testing.T) {
 		if want := test.payload; !reflect.DeepEqual(got, want) {
 			t.Errorf("ParseWebHook(%#v, %#v) = %#v, want %#v", test.messageType, p, got, want)
 		}
+	}
+}
+
+func TestDeliveryID(t *testing.T) {
+	id := "8970a780-244e-11e7-91ca-da3aabcb9793"
+	req, err := http.NewRequest("POST", "http://localhost", nil)
+	if err != nil {
+		t.Fatalf("DeliveryID: %v", err)
+	}
+	req.Header.Set("X-Github-Delivery", id)
+
+	got := DeliveryID(req)
+	if got != id {
+		t.Errorf("DeliveryID(%#v) = %q, want %q", req, got, id)
 	}
 }
