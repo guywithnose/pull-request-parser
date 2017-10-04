@@ -4,4 +4,4 @@ package command
 const Name string = "prp"
 
 // Version is the current version
-const Version string = "0.3.0-devel"
+const Version string = "0.3.0"
