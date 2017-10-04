@@ -105,32 +105,34 @@ func completeAutoRebaseFlags(c *cli.Context) {
 }
 
 func handleCompletion(c *cli.Context) {
-	lastParam := os.Args[len(os.Args)-2]
 	configData, profileName, err := loadProfile(c)
 	if err != nil {
 		return
 	}
 
 	profile := configData.Profiles[*profileName]
-	prs, err := getValidPullRequests(&profile, c.StringSlice("repo"), true, c.App.ErrWriter)
+	prs, err := getValidPullRequests(&profile, []string{}, true, c.App.ErrWriter)
 	if err != nil {
 		return
 	}
 
 	selectedRepos := c.StringSlice("repo")
-	completions := completeRepoValues(profile, prs, selectedRepos, lastParam)
+	completions := completeRepoValues(profile, prs, selectedRepos)
 
 	completions = unique(completions)
 	sort.Strings(completions)
 	fmt.Fprintln(c.App.Writer, strings.Join(completions, "\n"))
 }
 
-func completeRepoValues(profile config.Profile, prs <-chan *pullRequest, selectedRepos []string, lastParam string) []string {
+func completeRepoValues(profile config.Profile, prs <-chan *pullRequest, selectedRepos []string) []string {
+	lastParam := os.Args[len(os.Args)-2]
 	completions := make([]string, 0, len(profile.TrackedRepos))
 	for pr := range prs {
 		fullRepoName := fmt.Sprintf("%s/%s", pr.Repo.Owner, pr.Repo.Name)
 		if lastParam == "--pull-request-number" {
-			completions = append(completions, strconv.Itoa(pr.PullRequestID))
+			if len(selectedRepos) == 0 || stringSliceContains(fullRepoName, selectedRepos) {
+				completions = append(completions, strconv.Itoa(pr.PullRequestID))
+			}
 		} else if !stringSliceContains(fullRepoName, selectedRepos) {
 			completions = append(completions, fullRepoName)
 		}
