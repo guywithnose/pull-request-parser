@@ -53,8 +53,10 @@ func printResults(prs <-chan *pullRequest, verbose bool, w io.Writer) error {
 	buffer := &bytes.Buffer{}
 	tabW := tabwriter.NewWriter(buffer, 0, 0, 0, ' ', tabwriter.Debug|tabwriter.FilterHTML)
 	fmt.Fprintln(tabW, "Repo\tID\tTitle\tOwner\tBranch\tTarget\t+1\tUTD\tStatus\tReview\tLabels")
+	count := 0
 	for pr := range prs {
 		printResult(pr, verbose, tabW)
+		count++
 	}
 
 	_ = tabW.Flush()
@@ -62,6 +64,7 @@ func printResults(prs <-chan *pullRequest, verbose bool, w io.Writer) error {
 	output := parseColors(buffer.String())
 
 	fmt.Fprint(w, output)
+	fmt.Fprintf(w, "Total %d\n", count)
 
 	return nil
 }
