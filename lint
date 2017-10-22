@@ -3,7 +3,7 @@ gometalinter --install --update > /dev/null
 gometalinter --vendored-linters \
     --exclude '^vendor' \
     --disable-all \
-    --enable aligncheck \
+    --enable maligned \
     --enable deadcode \
     --enable dupl --dupl-threshold=150 \
     --enable errcheck \
@@ -14,8 +14,8 @@ gometalinter --vendored-linters \
     --enable ineffassign \
     --enable interfacer \
     --enable lll --line-length=160 \
-    --enable misspell \
     --enable megacheck \
+    --enable misspell \
     --enable structcheck \
     --enable unconvert \
     --enable unparam \
@@ -23,4 +23,4 @@ gometalinter --vendored-linters \
     --enable vet \
     --enable vetshadow \
     --deadline=60s \
-    config command prp
+    config command prp .
